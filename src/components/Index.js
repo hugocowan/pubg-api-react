@@ -26,7 +26,7 @@ class Index extends React.Component{
               }
             })
               .then(res => {
-                console.log(res.data, res.data.data.relationships.assets.data[0].id);
+                // console.log(res.data, res.data.data.relationships.assets.data[0].id);
                 const matches = { ...this.state.matches };
                 const id = res.data.data.relationships.assets.data[0].id;
                 let telemetryURL;
@@ -57,7 +57,13 @@ class Index extends React.Component{
   }
 
   render(){
-    if(!this.state.matches) return 'loading...';
+    if(!this.state.matches)
+      return (
+        <div>
+          <p>Loading... If this takes a while, the username you typed was incorrect.</p>
+          <Link to='/'>Try Again</Link>
+        </div>
+      );
     return(
       <div>
         <Link to='/'>Home</Link>
