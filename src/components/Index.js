@@ -6,7 +6,9 @@ class Index extends React.Component{
   state = {};
 
   componentDidMount(){
-    axios.get('https://api.playbattlegrounds.com/shards/pc-eu/players?filter[playerNames]=boogaliwoogali', {
+    const { username } = this.props.match.params;
+    // console.log(this.props);
+    axios.get(`https://api.playbattlegrounds.com/shards/pc-eu/players?filter[playerNames]=${username}`, {
       headers: {
         Authorization: `Bearer ${config.PUBG_API_KEY}`,
         Accept: 'application/vnd.api+json'
@@ -54,14 +56,11 @@ class Index extends React.Component{
       });
   }
 
-  deleteMatch = () => {
-    this.setState({ viewedMatch: null });
-  }
-
   render(){
     if(!this.state.matches) return 'loading...';
     return(
       <div>
+        <Link to='/'>Home</Link>
         <br />
         {this.state.matches.map(match =>
           <div key={match.id}>
