@@ -9,17 +9,14 @@ class Index extends React.Component{
 
   componentDidMount(){
     axios
-      .get(`/api/matches/${this.state.username}`)
+      .get(`/api/${this.state.username}`)
       .then(res => {
         const telemetry = res.data.relationships.matches.data;
         this.setState({ telemetry }, () => {
           this.state.telemetry.forEach((match, index) => {
             const matchNumber = `${index+1}`;
-            axios.get(`https://api.playbattlegrounds.com/shards/pc-eu/matches/${match.id}`, {
-              headers: {
-                Accept: 'application/vnd.api+json'
-              }
-            })
+            axios
+              .get(`/api/matches/${match.id}`)
               .then(res => {
                 console.log(res.data);
 

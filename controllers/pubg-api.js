@@ -1,7 +1,7 @@
 const rp = require('request-promise');
 const Season = require('../models/season');
 
-function PlayerMatches(req, res, next){
+function playerSeason(req, res, next){
   console.log('Getting season...', process.env.PUBG_API_KEY);
   rp({
     method: 'GET',
@@ -17,48 +17,41 @@ function PlayerMatches(req, res, next){
       Season
         .create(season.data[0])
         .then(season => {
-          console.log('season: ', season);
-          const matchData = season.relationships.matches.data;
-          const matches = {};
-          matchData.forEach((match, index) => {
-            const matchNumber = `${index+1}`;
-            rp({
-              method: 'GET',
-              url: `https://api.playbattlegrounds.com/shards/pc-eu/matches/${match.id}`,
-              headers: {
-                Accept: 'application/vnd.api+json'
-              },
-              json: true
-            })
-              .then(res => {
-                console.log('res.data: ', res.data);
-                const id = res.data.relationships.assets.data[0].id;
-                let telemetryURL;
-                res.data.included.forEach((asset) => {
-                  if(asset.id === id)
-                    telemetryURL = asset.attributes.URL;
-                });
-
-                matches[matchNumber] = {
-                  id,
-                  telemetryURL,
-                  attributes: res.data.attributes
-                };
-              });
-          })
-            .then(() => {
-              const matchesArray = Object.keys(matches).map(key => {
-                return matches[key];
-              });
-              console.log('final array to be sent: ', matchesArray);
-              res.json(matchesArray);
-            });
+          res.json(season);
         });
-      res.json(season.data[0]);
     })
     .catch(next);
 }
 
+function playerMatches(req, res, next){
+  rp({
+    method: 'GET',
+    url: `https://api.playbattlegrounds.com/shards/pc-eu/matches/${req.params.matchId}`,
+    headers: {
+      Accept: 'application/vnd.api+json'
+    },
+    json: true
+  })
+    .then(match => res.json(match))
+    .catch(next);
+}
+
+function matchInfo(req, res, next){
+  console.log('hi!');
+  rp({
+    method: 'GET',
+    url: 'https://telemetry-cdn.playbattlegrounds.com/bluehole-pubg/pc-eu/2018/07/16/15/12/96c7af11-890a-11e8-b291-0a586461b35b-telemetry.json',
+    headers: {
+      Accept: 'application/vnd.api+json'
+    },
+    json: true
+  })
+    .then(matchInfo => console.log(matchInfo), res.json(matchInfo))
+    .catch(next);
+}
+
 module.exports = {
-  matches: PlayerMatches
+  season: playerSeason,
+  matches: playerMatches,
+  match: matchInfo
 };
