@@ -3,12 +3,13 @@ import axios from 'axios';
 import { Link } from 'react-router-dom';
 
 class Index extends React.Component{
-  state = {};
+  state = {
+    username: this.props.match.params.username
+  };
 
   componentDidMount(){
-    const { username } = this.props.match.params;
     axios
-      .get(`/api/matches/${username}`)
+      .get(`/api/matches/${this.state.username}`)
       .then(res => {
         const telemetry = res.data.relationships.matches.data;
         this.setState({ telemetry }, () => {
