@@ -7,33 +7,28 @@ class Index extends React.Component{
 
   componentDidMount(){
     const { username } = this.props.match.params;
-    // console.log(this.props);
-    axios.get(`https://api.playbattlegrounds.com/shards/pc-eu/players?filter[playerNames]=${username}`, {
-      headers: {
-        Authorization: `Bearer ${config.PUBG_API_KEY}`,
-        Accept: 'application/vnd.api+json'
-      }
-    })
+    axios
+      .get(`/api/matches/${username}`)
       .then(res => {
-        const telemetry = res.data.data[0].relationships.matches.data;
+        const telemetry = res.data.relationships.matches.data;
         this.setState({ telemetry }, () => {
           this.state.telemetry.forEach((match, index) => {
             const matchNumber = `${index+1}`;
-            // console.log(matchNumber);
             axios.get(`https://api.playbattlegrounds.com/shards/pc-eu/matches/${match.id}`, {
               headers: {
                 Accept: 'application/vnd.api+json'
               }
             })
               .then(res => {
-                // console.log(res.data, res.data.data.relationships.assets.data[0].id);
+                console.log(res.data);
+
                 const matches = { ...this.state.matches };
                 const id = res.data.data.relationships.assets.data[0].id;
                 let telemetryURL;
                 // console.log('hi, ',matches);
 
                 res.data.included.forEach((asset) => {
-                  if(asset.id === res.data.data.relationships.assets.data[0].id)
+                  if(asset.id === id)
                     telemetryURL = asset.attributes.URL;
                 });
 
@@ -57,13 +52,14 @@ class Index extends React.Component{
   }
 
   render(){
-    if(!this.state.matches)
+    if(!this.state.matches){
       return (
         <div>
-          <p>Loading... If this takes a while, the username you typed was incorrect.</p>
+          <p>Loading... If this takes a while, the username you typed was incorrect (or bad internet.. or a bug :/).</p>
           <Link to='/'>Try Again</Link>
         </div>
       );
+    }
     return(
       <div>
         <Link to='/'>Home</Link>
@@ -76,7 +72,7 @@ class Index extends React.Component{
             <p>Server: {match.attributes.shardId}</p>
             <p>Duration: {match.attributes.duration / 60} minutes.</p>
             <Link to={{
-              pathname: `/matches/${match.id}`,
+              pathname: `/matches/${this.state.username}/${match.id}`,
               state: {
                 telemetryURL: match.telemetryURL
               }
