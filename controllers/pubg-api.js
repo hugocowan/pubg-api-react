@@ -1,12 +1,13 @@
 const rp = require('request-promise');
 const Season = require('../models/season');
+const config = require('../config');
 
 function playerSeason(req, res, next){
-  console.log('Getting season...', process.env.PUBG_API_KEY);
+  console.log('Getting season...', config.PUBG_API_KEY);
   const tempMatch = [];
 
   function sendData(){
-    console.log('tempMatch: ',tempMatch);
+    // console.log('tempMatch: ',tempMatch);
     res.json(tempMatch);
   }
 
