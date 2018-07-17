@@ -18,7 +18,7 @@ class Home extends React.Component {
     return(
       <div>
         <p>Welcome to my stats site for PUBG! See all your current season matches here,
-        {' '}along with information on how the games went.
+          {' '}along with information on how the games went.
         </p>
         <form onSubmit={this.redirect}>
           <label htmlFor="username">Username</label>
