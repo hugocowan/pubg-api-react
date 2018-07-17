@@ -1,9 +1,8 @@
 const rp = require('request-promise');
 const Season = require('../models/season');
-const config = require('../config');
 
 function playerSeason(req, res, next){
-  console.log('Getting season...', config.PUBG_API_KEY);
+  console.log('Getting season...');
   const tempMatch = [];
 
   function sendData(){
@@ -15,7 +14,7 @@ function playerSeason(req, res, next){
     method: 'GET',
     url: `https://api.playbattlegrounds.com/shards/pc-eu/players?filter[playerNames]=${req.params.username}`,
     headers: {
-      Authorization: `Bearer ${config.PUBG_API_KEY}`,
+      Authorization: `Bearer ${process.env.PUBG_API_KEY}`,
       Accept: 'application/vnd.api+json'
     },
     json: true
@@ -37,15 +36,31 @@ function playerSeason(req, res, next){
               json: true
             })
               .then(res => {
-                const id = res.data.relationships.assets.data[0].id;
+                const id = res.data.id;
+                const attrs = res.data.attributes;
+                // console.log(res.data.attributes.createdAt);
+                const telemetryId = res.data.relationships.assets.data[0].id;
+                const maps = {
+                  Erangel_Main: 'Erangel',
+                  Desert_Main: 'Miramar',
+                  Savage_Main: 'Sanhok'
+                };
                 let telemetryURL;
                 res.included.forEach((asset) => {
-                  if(asset.id === id){
+                  if(asset.id === telemetryId){
                     telemetryURL = asset.attributes.URL;
                     tempMatch.push({
                       id,
                       telemetryURL,
-                      attributes: res.data.attributes
+                      createdAt: attrs.createdAt,
+                      duration: attrs.duration,
+                      gameMode: attrs.gameMode,
+                      // isCustomMatch: attrs.isCustomMatch,
+                      mapName: maps[attrs.mapName],
+                      // stats: attrs.stats,
+                      // tags: attrs.tags,
+                      // titleId: attrs.titleId,
+                      shardId: attrs.shardId
                     });
                   }
                 });
