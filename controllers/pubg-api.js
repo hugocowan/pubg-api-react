@@ -3,7 +3,14 @@ const Season = require('../models/season');
 
 function playerSeason(req, res, next){
   console.log('Getting season...', process.env.PUBG_API_KEY);
-  rp({
+  const tempMatch = [];
+
+  function sendData(){
+    console.log('tempMatch: ',tempMatch);
+    res.json(tempMatch);
+  }
+
+  return rp({
     method: 'GET',
     url: `https://api.playbattlegrounds.com/shards/pc-eu/players?filter[playerNames]=${req.params.username}`,
     headers: {
@@ -14,25 +21,40 @@ function playerSeason(req, res, next){
   })
     .then(season => {
       console.log('season received.');
-      Season
+      return Season
         .create(season.data[0])
         .then(season => {
-          res.json(season);
+          const matchIds = season.relationships.matches.data;
+
+          matchIds.forEach(match => {
+            rp({
+              method: 'GET',
+              url: `https://api.playbattlegrounds.com/shards/pc-eu/matches/${match.id}`,
+              headers: {
+                Accept: 'application/vnd.api+json'
+              },
+              json: true
+            })
+              .then(res => {
+                const id = res.data.relationships.assets.data[0].id;
+                let telemetryURL;
+                res.included.forEach((asset) => {
+                  if(asset.id === id){
+                    telemetryURL = asset.attributes.URL;
+                    tempMatch.push({
+                      id,
+                      telemetryURL,
+                      attributes: res.data.attributes
+                    });
+                  }
+                });
+                if(tempMatch.length === matchIds.length){
+                  sendData();
+                }
+              });
+          });
         });
     })
-    .catch(next);
-}
-
-function playerMatches(req, res, next){
-  rp({
-    method: 'GET',
-    url: `https://api.playbattlegrounds.com/shards/pc-eu/matches/${req.params.matchId}`,
-    headers: {
-      Accept: 'application/vnd.api+json'
-    },
-    json: true
-  })
-    .then(match => res.json(match))
     .catch(next);
 }
 
@@ -52,6 +74,5 @@ function matchInfo(req, res, next){
 
 module.exports = {
   season: playerSeason,
-  matches: playerMatches,
   match: matchInfo
 };

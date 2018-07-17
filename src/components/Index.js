@@ -10,50 +10,14 @@ class Index extends React.Component{
   componentDidMount(){
     axios
       .get(`/api/${this.state.username}`)
-      .then(res => {
-        const telemetry = res.data.relationships.matches.data;
-        this.setState({ telemetry }, () => {
-          this.state.telemetry.forEach((match, index) => {
-            const matchNumber = `${index+1}`;
-            axios
-              .get(`/api/matches/${match.id}`)
-              .then(res => {
-                console.log(res.data);
-
-                const matches = { ...this.state.matches };
-                const id = res.data.data.relationships.assets.data[0].id;
-                let telemetryURL;
-                // console.log('hi, ',matches);
-
-                res.data.included.forEach((asset) => {
-                  if(asset.id === id)
-                    telemetryURL = asset.attributes.URL;
-                });
-
-                matches[matchNumber] = {
-                  id,
-                  telemetryURL,
-                  attributes: res.data.data.attributes
-                };
-
-                const matchesArray = Object.keys(matches).map(key => {
-                  return matches[key];
-                });
-
-                this.setState({ matches: matchesArray }, () => {
-                  // console.log(this.state);
-                });
-              });
-          });
-        });
-      });
+      .then(res => this.setState({ matches: res.data }));
   }
 
   render(){
     if(!this.state.matches){
       return (
         <div>
-          <p>Loading... If this takes a while, the username you typed was incorrect (or bad internet.. or a bug :/).</p>
+          <p>Loading... If this takes a while, the username you typed may be incorrect.</p>
           <Link to='/'>Try Again</Link>
         </div>
       );
