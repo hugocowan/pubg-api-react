@@ -3,7 +3,7 @@ const Season = require('../models/season');
 const config = require('../config');
 
 function playerSeason(req, res, next){
-  console.log('Getting season...', config.PUBG_API_KEY);
+  console.log('Getting season...');
   const tempMatch = [];
 
   function sendData(){
