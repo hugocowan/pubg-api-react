@@ -2,5 +2,3 @@ node_modules
 *.log
 .nyc_output
 config.js
-pubg-api-react.git
-pubg-api-react.git.bfg-report
