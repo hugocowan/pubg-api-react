@@ -13,23 +13,24 @@ class Index extends React.Component{
   componentDidMount(){
     axios
       .get(`/api/${this.state.username}`)
-      .then(res => this.setState({ matches: res.data }, () => console.log(this.state)));
+      .then(res => this.setState({ season: res.data }, () => console.log(this.state)));
   }
 
   sortAndFilter = () => {
     const [field, dir] = this.state.sort.split('|');
     console.log('hi!', field, dir);
     const re = new RegExp(this.state.search, 'i');
-    const filtered = _.filter(this.state.matches, match => {
+    const filtered = _.filter(this.state.season.matches, match => {
       return re.test(match.createdAt) ||
-        re.test(match.mapName) || re.test(match.gameMode);
+             re.test(match.mapName) ||
+             re.test(match.gameMode);
     });
     return _.orderBy(filtered, field, dir);
   }
 
   render(){
 
-    if(!this.state.matches){
+    if(!this.state.season){
       return (
         <div className='index'>
           <p>Loading... Hey. How are you doing. {'I\'m'} alright. If this takes a while, the username you typed may be incorrect.</p>
