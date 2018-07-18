@@ -33,12 +33,13 @@ class Index extends React.Component{
     if(!this.state.season){
       return (
         <div className='index'>
-          <p>Loading... Hey. How are you doing. {'I\'m'} alright. If this takes a while, the username you typed may be incorrect.</p>
           <div className='button'>
             <Link to='/'>
-              Go Back
+            Go Back
             </Link>
           </div>
+          <img src='/assets/eyes.png' className='eyes'/>
+          <p>Loading... Hey. How are you doing. {'I\'m'} alright. If this takes a while, the username you typed may be incorrect.</p>
         </div>
       );
     }
@@ -51,6 +52,8 @@ class Index extends React.Component{
         </div>
         <img src='/assets/eyes.png' className='eyes'/>
         <br />
+        {this.state.season.message &&
+          <p className='error'>{this.state.season.message}</p>}
         {this.sortAndFilter().map(match =>{
           const playDate = new Date(match.createdAt);
 

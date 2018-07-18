@@ -19,11 +19,23 @@ body{
   }
 }
 
+p{
+  background: #B0E2FF;
+  border-radius: 5px;
+  padding: 10px;
+}
+
+.error{
+  background: #ff4554;
+}
+
 .eyes{
   margin: 5px auto;
   width: 90%;
   height: 90%;
 }
+
+
 
 .home{
   display: flex;
@@ -79,11 +91,6 @@ body{
   flex-wrap: wrap;
   justify-content: space-around;
   margin: 0 20px;
-  p{
-    background: #B0E2FF;
-    border-radius: 5px;
-    padding: 10px;
-  }
   .button{
     margin: 10px auto;
   }

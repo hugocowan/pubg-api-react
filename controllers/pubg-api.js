@@ -5,11 +5,32 @@ function playerSeason(req, res, next) {
   console.log('Getting season...');
   const tempMatch = [];
 
-  function sendData(seasonData) {
+  function saveData(seasonData) {
     // console.log('tempMatch: ',tempMatch);
+
     Season
-      .create(seasonData)
-      .then(season => res.json(season));
+      .find()
+      .byName(req.params.username)
+      .then(season => {
+        if(season[0]) season[0].remove();
+      })
+      .then(() =>{
+        Season
+          .create(seasonData)
+          .then(season => res.json(season))
+          .catch(next);
+      });
+  }
+
+  function getData() {
+    Season
+      .find()
+      .byName(req.params.username)
+      .then(season => {
+        if(!season[0]) throw 'Too many requests.';
+        res.json(season[0]);
+      })
+      .catch(next);
   }
 
   return rp({
@@ -67,16 +88,20 @@ function playerSeason(req, res, next) {
             });
             if(tempMatch.length === matches.length){
               seasonData.matches = tempMatch;
-              sendData(seasonData);
+              saveData(seasonData);
             }
           });
       });
     })
-    .catch(next);
+    .catch(next => {
+      if(next.message === '429 - undefined'){
+        return getData();
+      } else return next;
+    });
 }
 
 function matchInfo(req, res, next) {
-  console.log('hi!');
+  // console.log('hi!');
   rp({
     method: 'GET',
     url: 'https://telemetry-cdn.playbattlegrounds.com/bluehole-pubg/pc-eu/2018/07/16/15/12/96c7af11-890a-11e8-b291-0a586461b35b-telemetry.json',

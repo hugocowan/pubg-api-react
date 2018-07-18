@@ -4,9 +4,8 @@ function indexRoute(req, res, next) {
   Season
     .find()
     .byName(req.params.username)
-    .exec()
     .then(season => {
-      console.log(season);
+      if(!season[0]) throw 'Too many requests.';
       res.json(season[0]);
     })
     .catch(next);
