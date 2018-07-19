@@ -5,7 +5,7 @@ function playerSeason(req, res, next) {
   console.log('Checking season DB...');
 
   let oldSeason;
-  const tempMatch = [];
+  const matchesArray = [];
 
   const promise = new Promise(resolve => {
     resolve('This is just to allow for a catch block!');
@@ -95,7 +95,7 @@ function playerSeason(req, res, next) {
 
                 if(asset.id === telemetryId) {
 
-                  tempMatch.push({
+                  matchesArray.push({
                     id: match.data.id,
                     telemetryURL: asset.attributes.URL,
                     createdAt: attrs.createdAt,
@@ -110,8 +110,8 @@ function playerSeason(req, res, next) {
                   });
                 }
               });
-              if(tempMatch.length === matches.length){
-                seasonData.matches = tempMatch;
+              if(matchesArray.length === matches.length){
+                seasonData.matches = matchesArray;
                 showNewSeason(seasonData);
               }
             });
@@ -126,15 +126,16 @@ function playerSeason(req, res, next) {
 }
 
 function matchInfo(req, res, next) {
+
   rp({
     method: 'GET',
-    url: 'https://telemetry-cdn.playbattlegrounds.com/bluehole-pubg/pc-eu/2018/07/16/15/12/96c7af11-890a-11e8-b291-0a586461b35b-telemetry.json',
+    url: `${req.params[0]}`,
     headers: {
       Accept: 'application/vnd.api+json'
     },
     json: true
   })
-    .then(matchInfo => console.log(matchInfo), res.json(matchInfo))
+    .then(matchInfo => res.json(matchInfo))
     .catch(next);
 }
 
