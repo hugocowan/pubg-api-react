@@ -7,8 +7,9 @@ function playerSeason(req, res, next) {
   let oldSeason;
   const tempMatch = [];
 
-  // console.log(req.params.username);
-
+  const promise = new Promise(resolve => {
+    resolve('This is just to allow for a catch block!');
+  });
 
   Season
     .find()
@@ -24,9 +25,8 @@ function playerSeason(req, res, next) {
         oldSeason = season[0];
         const timer = (seasonDate + 60000 - currentDate)/1000;
 
-        if(timer < 0){
+        if(timer <= 0){
           console.log('Timer\'s up. Getting new season...');
-          season[0].remove();
           getNewSeason();
 
         } else {
@@ -41,10 +41,17 @@ function playerSeason(req, res, next) {
 
   function showOldSeason(oldSeason) {
     console.log('Season sent.');
-    res.json(oldSeason);
+    promise
+      .then(() => {
+        if(!oldSeason) throw 'Too many requests.';
+        res.json(oldSeason);
+      })
+      .catch(next);
   }
 
   function showNewSeason(seasonData) {
+    console.log('Season sent.');
+    if(oldSeason) oldSeason.remove();
     Season
       .create(seasonData)
       .then(season => res.json(season))
@@ -94,8 +101,8 @@ function playerSeason(req, res, next) {
                     createdAt: attrs.createdAt,
                     duration: attrs.duration,
                     gameMode: attrs.gameMode,
-                    // isCustomMatch: attrs.isCustomMatch,
                     mapName: maps[attrs.mapName],
+                    // isCustomMatch: attrs.isCustomMatch,
                     // stats: attrs.stats,
                     // tags: attrs.tags,
                     // titleId: attrs.titleId,
@@ -107,21 +114,18 @@ function playerSeason(req, res, next) {
                 seasonData.matches = tempMatch;
                 showNewSeason(seasonData);
               }
-            })
-            .catch(next => {
-              if(!oldSeason){
-                throw 'Too many requests.';
-              } else if(next.message === '429 - undefined'){
-                showOldSeason(oldSeason);
-              } else next;
             });
         });
+      })
+      .catch(next => {
+        if(next.message === '429 - undefined'){
+          return showOldSeason(oldSeason);
+        } else return next;
       });
   }
 }
 
 function matchInfo(req, res, next) {
-  // console.log('hi!');
   rp({
     method: 'GET',
     url: 'https://telemetry-cdn.playbattlegrounds.com/bluehole-pubg/pc-eu/2018/07/16/15/12/96c7af11-890a-11e8-b291-0a586461b35b-telemetry.json',
