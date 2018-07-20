@@ -1,5 +1,6 @@
 import React from 'react';
-// import { Link } from 'react-router-dom';
+
+import Navbar from './Navbar';
 
 class Home extends React.Component {
 
@@ -17,8 +18,8 @@ class Home extends React.Component {
   render(){
     return(
       <div className='home'>
-        <img src='/assets/eyes.png' className='eyes'/>
-        <div>
+        <Navbar/>
+        <div className='content'>
           <p>Welcome to PUBGistics!
           <br />
             See all your current season matches here,

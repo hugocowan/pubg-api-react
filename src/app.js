@@ -6,6 +6,7 @@ import {
   Switch
 } from 'react-router-dom';
 
+import 'font-awesome/css/font-awesome.min.css';
 import './assets/scss/style.scss';
 
 import Home from './components/Home';

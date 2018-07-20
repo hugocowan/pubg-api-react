@@ -3,6 +3,8 @@ import axios from 'axios';
 import { Link } from 'react-router-dom';
 import _ from 'lodash';
 
+import Navbar from './Navbar';
+
 class Index extends React.Component{
   state = {
     sort: 'createdAt|desc',
@@ -32,54 +34,58 @@ class Index extends React.Component{
 
     if(!this.state.season){
       return (
-        <div className='index'>
-          <div className='button'>
-            <Link to='/'>
-            Go Back
-            </Link>
+        <div>
+          <Navbar
+            button='Home'
+            url='/'
+          />
+          <div className='index'>
+            <div className='button'>
+              <Link to='/'>
+              Go Back
+              </Link>
+            </div>
+            <p>Loading... Hey. How are you doing. {'I\'m'} alright. If this takes a while, the username you typed may be incorrect.</p>
           </div>
-          <img src='/assets/eyes.png' className='eyes'/>
-          <p>Loading... Hey. How are you doing. {'I\'m'} alright. If this takes a while, the username you typed may be incorrect.</p>
         </div>
       );
     }
     return(
-      <div className='index'>
-        <div className='button'>
-          <Link to='/'>
-            Home
-          </Link>
-        </div>
-        <img src='/assets/eyes.png' className='eyes'/>
-        <br />
-        {this.state.season.message &&
-          <p className='error'>{this.state.season.message}</p>}
-        {this.sortAndFilter().map(match =>{
-          const playDate = new Date(match.createdAt);
+      <div>
+        <Navbar
+          button='Home'
+          url='/'
+        />
+        <div className='index'>
+          {this.state.season.message &&
+            <p className='error'>{this.state.season.message}</p>}
+          {this.sortAndFilter().map(match =>{
+            const playDate = new Date(match.createdAt);
 
-          return (
-            <div key={match.id} className='matches'>
-              <p>Game Mode: {match.gameMode}</p>
-              <p>Map: {match.mapName}</p>
-              <p>Server: {match.shardId}</p>
-              <p>Duration: {(match.duration / 60).toFixed(2)} minutes</p>
-              <p>Played on: {playDate.toLocaleString()}</p>
-              <div className='button'>
-                <Link
-                  to={{
-                    pathname: `/matches/${this.state.username}/${match.id}`,
-                    state: {
-                      telemetryURL: match.telemetryURL
-                    }
-                  }}
-                  className='button'
-                >
-                  Show More
-                </Link>
+            return (
+              <div key={match.id} className='matches'>
+                <p>Game Mode: {match.gameMode}</p>
+                <p>Map: {match.mapName}</p>
+                <p>Server: {match.shardId}</p>
+                <p>Duration: {(match.duration / 60).toFixed(2)} minutes</p>
+                <p>Played on: {playDate.toLocaleString()}</p>
+                <div className='button'>
+                  <Link
+                    to={{
+                      pathname: `/matches/${this.state.username}/${match.id}`,
+                      state: {
+                        telemetryURL: match.telemetryURL
+                      }
+                    }}
+                    className='button'
+                  >
+                    Show More
+                  </Link>
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     );
   }

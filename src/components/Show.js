@@ -2,6 +2,9 @@ import React from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 
+import Navbar from './Navbar';
+
+
 class Show extends React.Component{
   state = {};
 
@@ -21,6 +24,7 @@ class Show extends React.Component{
     if(!this.state.viewedMatch) return 'Loading... (this could take a while!)';
     return(
       <div>
+        <Navbar />
         <Link to='/matches'>Go Back</Link>
         <pre>{JSON.stringify(this.state.viewedMatch, null, 2)}</pre>
       </div>
