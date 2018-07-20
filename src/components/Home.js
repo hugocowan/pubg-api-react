@@ -6,7 +6,7 @@ class Home extends React.Component {
   state = {};
 
   storeName = ({ target: { value } }) => {
-    this.setState({username: value});
+    this.setState({ username: value });
   }
 
   redirect = (e) => {
@@ -16,6 +16,7 @@ class Home extends React.Component {
 
   render(){
     return(
+<<<<<<< HEAD
       <div>
         <p>Welcome to my stats site for PUBG! See all your current season matches here,
           {' '}along with information on how the games went.
@@ -34,6 +35,34 @@ class Home extends React.Component {
             Click to view your matches
           </button>
         </form>
+=======
+      <div className='home'>
+        <img src='/assets/eyes.png' className='eyes'/>
+        <div>
+          <p>Welcome to PUBGistics!
+          <br />
+            See all your current season matches here,
+          {' '}along with information on how the games went. Eventually.
+          </p>
+          <form onSubmit={this.redirect}>
+            <label htmlFor="username">Username: </label>
+            <input
+              id="username"
+              name="username"
+              placeholder='Enter username here'
+              onChange = {(e) => this.storeName(e)}
+              onBlur = {(e) => this.storeName(e)}
+            />
+            <div className='button'>
+              <button
+                to={`/matches/${this.state.username}`}
+              >
+                View your matches
+              </button>
+            </div>
+          </form>
+        </div>
+>>>>>>> 748a7b9442e3174aed233b3212491bade10daecb
       </div>
     );
   }

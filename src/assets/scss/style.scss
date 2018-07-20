@@ -1,0 +1,121 @@
+body{
+  background: #F8F8FF;
+}
+
+.button{
+  width: 100%;
+  a, button{
+    border: none;
+    font-size: 16px;
+    text-decoration: none;
+    color: grey;
+    padding: 8px;
+    border-radius: 5px;
+    background: #E6E8FA;
+    box-shadow: none;
+    &:hover{
+        background: #2F2F4F;
+    }
+  }
+}
+
+p{
+  background: #B0E2FF;
+  border-radius: 5px;
+  padding: 10px;
+}
+
+.error{
+  background: #ff4554;
+}
+
+.eyes{
+  margin: 5px auto;
+  width: 90%;
+  height: 90%;
+}
+
+
+
+.home{
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-around;
+  .eyes{
+    padding: 40px 0 0 0;
+  }
+  div{
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    background: #B0E2FF;
+    border-radius: 5px;
+    padding: 10px;
+    margin: 10px auto;
+    width: 95%;
+    p{
+      width: 90%;
+    }
+    form{
+      display: flex;
+      flex-wrap: wrap;
+      padding: 10px;
+      width: 90%;
+      label{
+        align-self: center;
+        padding: 0 10px 0 0;
+      }
+      input{
+        border: none;
+        align-self: center;
+        border-radius: 5px;
+        width: 30%;
+        height: 2em;
+        font-size: 14px;
+      }
+      .button{
+        width: 20%;
+        margin: 0;
+      }
+      @media(max-width: 860px){
+        label, input, .button{
+          width: 100%;
+        }
+      }
+    }
+  }
+}
+
+.index{
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-around;
+  margin: 0 20px;
+  .button{
+    margin: 10px auto;
+  }
+  // #B0E2FF
+  .matches{
+    background: #B0E2FF;
+    border-radius: 5px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    padding: 10px;
+    margin: 10px;
+    width: 45%;
+    p{
+      // width: 100%;
+      margin: 10px 15px 10px 5px;
+    }
+    .button{
+      margin: 10px 5px;
+    }
+    @media(max-width: 860px){
+      width: 100%;
+      p{
+        width: 100%;
+      }
+    }
+  }
+}

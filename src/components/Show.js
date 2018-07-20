@@ -6,17 +6,15 @@ class Show extends React.Component{
   state = {};
 
   componentDidMount() {
-    // console.log(this.props.location.state);
     const { telemetryURL } = this.props.location.state;
-    // console.log(telemetryURL);
-    axios.get(telemetryURL, {
-      headers: {
-        Accept: 'application/vnd.api+json'
-      }
-    })
-      .then(res => this.setState({ viewedMatch: res.data }, () => {
-        console.log(this.state);
-      }));
+    axios
+      .get(`/api/telemetry/${telemetryURL}`)
+      .then(res => {
+        console.log(res);
+        this.setState({ viewedMatch: res.data }, () => {
+          console.log(this.state);
+        });
+      });
   }
 
   render(){

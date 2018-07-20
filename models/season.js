@@ -1,16 +1,16 @@
 const mongoose = require('mongoose');
 
 const seasonSchema = new mongoose.Schema({
+  name: { type: String },
   attributes: {
     createdAt: { type: String },
-    name: { type: String },
     shardId: { type: String }
   },
-  relationships: {
-    matches: {
-      data: [{}]
-    }
-  }
+  matches: [{}]
 });
+
+seasonSchema.query.byName = function(name) {
+  return this.where({ name });
+};
 
 module.exports = mongoose.model('Season', seasonSchema);
