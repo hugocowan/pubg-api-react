@@ -17,6 +17,26 @@ class Home extends React.Component {
 
   render(){
     return(
+<<<<<<< HEAD
+      <div>
+        <p>Welcome to my stats site for PUBG! See all your current season matches here,
+          {' '}along with information on how the games went.
+        </p>
+        <form onSubmit={this.redirect}>
+          <label htmlFor="username">Username</label>
+          <input
+            id="username"
+            name="username"
+            placeholder='Enter username here'
+            onChange = {(e) => this.storeName(e)}
+          />
+          <button
+            to={`/matches/${this.state.username}`}
+          >
+            Click to view your matches
+          </button>
+        </form>
+=======
       <div className='home'>
         <Navbar/>
         <div className='content'>
@@ -43,6 +63,7 @@ class Home extends React.Component {
             </div>
           </form>
         </div>
+>>>>>>> 748a7b9442e3174aed233b3212491bade10daecb
       </div>
     );
   }
