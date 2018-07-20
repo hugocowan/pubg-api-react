@@ -1,10 +1,8 @@
 const rp = require('request-promise');
 const Season = require('../models/season');
 
-const config = require('../config.js') || null;
-
 function playerSeason(req, res, next) {
-  console.log('Checking season DB...', config.PUBG_API_KEY);
+  console.log('Checking season DB...');
 
   let oldSeason;
   const matchesArray = [];
@@ -61,13 +59,11 @@ function playerSeason(req, res, next) {
   }
 
   function getNewSeason() {
-    const key = process.env.PUBG_API_KEY || config.PUBG_API_KEY;
-
     rp({
       method: 'GET',
       url: `https://api.playbattlegrounds.com/shards/pc-eu/players?filter[playerNames]=${req.params.username}`,
       headers: {
-        Authorization: `Bearer ${key}`,
+        Authorization: `Bearer ${process.env.PUBG_API_KEY}`,
         Accept: 'application/vnd.api+json'
       },
       json: true
