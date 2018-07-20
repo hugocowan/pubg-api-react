@@ -21,9 +21,9 @@ class Home extends React.Component {
         <Navbar/>
         <div className='content'>
           <p>Welcome to PUBGistics!
-          <br />
+            <br />
             See all your current season matches here,
-          {' '}along with information on how the games went. Eventually.
+            {' '}along with information on how the games went. Eventually.
           </p>
           <form onSubmit={this.redirect}>
             <label htmlFor="username">Username: </label>

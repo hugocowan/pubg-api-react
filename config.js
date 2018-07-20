@@ -1,0 +1,5 @@
+const config = {
+  PUBG_API_KEY: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJqdGkiOiIwOGM0YTE5MC0yZjU3LTAxMzYtYjVmZi0wMzFiMjkwNGZkOGQiLCJpc3MiOiJnYW1lbG9ja2VyIiwiaWF0IjoxNTI1MTY5OTU5LCJwdWIiOiJibHVlaG9sZSIsInRpdGxlIjoicHViZyIsImFwcCI6InB1YmctdHJhY2tlci10aGluZ3kifQ.ZuaiRRhszoJdQ34WpRQFfr8gBMieMN0jSaFjNdZ80hw'
+};
+
+module.exports = config;
