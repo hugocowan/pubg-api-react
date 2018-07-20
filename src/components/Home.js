@@ -20,7 +20,8 @@ class Home extends React.Component {
       <div className='home'>
         <Navbar/>
         <div className='content'>
-          <p>Welcome to PUBGistics!
+          <p>
+            Welcome to PUBGistics!
             <br />
             See all your current season matches here,
             {' '}along with information on how the games went. Eventually.

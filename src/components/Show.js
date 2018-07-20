@@ -1,6 +1,5 @@
 import React from 'react';
 import axios from 'axios';
-import { Link } from 'react-router-dom';
 
 import Navbar from './Navbar';
 
@@ -15,19 +14,36 @@ class Show extends React.Component{
       .get(`/api/telemetry/${username}/${telemetryURL}`)
       .then(res => {
         console.log(res);
-        this.setState({ viewedMatch: res.data }, () => {
+        this.setState(res.data, () => {
           console.log(this.state);
         });
       });
   }
 
   render(){
-    if(!this.state.viewedMatch) return 'Loading... (this could take a while!)';
+    const players = Object.keys(this.state);
+    if(!players[0]) return (
+      <div>
+        <Navbar
+          button='Back'
+          url={`/matches/${this.props.match.params.username}`}
+        />
+        <p>Loading... (this could take a while!)</p>
+      </div>
+    );
     return(
       <div>
-        <Navbar />
-        <Link to='/matches'>Go Back</Link>
-        <pre>{JSON.stringify(this.state.viewedMatch, null, 2)}</pre>
+        <Navbar
+          button='Back'
+          url={`/matches/${this.props.match.params.username}`}
+        />
+        <p>
+          Team: {players.map((player, index) =>
+            players.length !== index+1 ? `${player}, ` : `${player}.`)}
+          <br />
+          WIP. See printed arrays below, or in the console. F12 or CMD+ALT+i.
+        </p>
+        <pre>{JSON.stringify(this.state, null, 2)}</pre>
       </div>
     );
   }

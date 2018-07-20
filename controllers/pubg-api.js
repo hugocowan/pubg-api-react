@@ -138,10 +138,46 @@ function matchInfo(req, res, next) {
   })
     .then(matchInfo => {
       console.log('Match info received. Filtering data...');
-      const filteredData = matchInfo.filter(data =>
-        data.character && data.character.name === `${req.params.username}`);
+      const { username } = req.params;
+
+      const matchData = {};
+
+      function getCoords(username) {
+        matchData[username].coords =
+          matchData[username].data.reduce((locationData, data) => {
+            const location = {
+              coords: data.character.location,
+              time: data._D
+            };
+            locationData.push(location);
+            return locationData;
+          }, []);
+      }
+
+      matchData[username] = {};
+
+      matchData[username].data = matchInfo.filter(data =>
+        data.character &&
+        data.character.name === `${username}`);
+
+      getCoords(username);
+
+      const teamData = matchInfo.filter(data =>
+        data.character &&
+        data.character.name !== username &&
+        data.character.teamId === matchData[username].data[0].character.teamId);
+
+      teamData.forEach((data) => {
+        const username = data.character.name;
+        matchData[username] = matchData[username] || {};
+        matchData[username].data = matchData[username].data || [];
+        matchData[username].data.push(data);
+        getCoords(username);
+      });
+
+
       console.log('Filtered match info sent.');
-      res.json(filteredData);
+      res.json(matchData);
     })
     .catch(next);
 }
