@@ -6,7 +6,7 @@ class Home extends React.Component {
   state = {};
 
   storeName = ({ target: { value } }) => {
-    this.setState({username: value});
+    this.setState({ username: value });
   }
 
   redirect = (e) => {
@@ -31,6 +31,7 @@ class Home extends React.Component {
               name="username"
               placeholder='Enter username here'
               onChange = {(e) => this.storeName(e)}
+              onBlur = {(e) => this.storeName(e)}
             />
             <div className='button'>
               <button
