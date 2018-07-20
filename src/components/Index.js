@@ -40,11 +40,6 @@ class Index extends React.Component{
             url='/'
           />
           <div className='index'>
-            <div className='button'>
-              <Link to='/'>
-              Go Back
-              </Link>
-            </div>
             <p>Loading... Hey. How are you doing. {'I\'m'} alright. If this takes a while, the username you typed may be incorrect.</p>
           </div>
         </div>

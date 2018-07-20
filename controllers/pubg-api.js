@@ -126,6 +126,7 @@ function playerSeason(req, res, next) {
 }
 
 function matchInfo(req, res, next) {
+  console.log('Getting detailed match info...');
 
   rp({
     method: 'GET',
@@ -136,9 +137,11 @@ function matchInfo(req, res, next) {
     json: true
   })
     .then(matchInfo => {
-      // const filteredData = matchInfo
-      console.log(matchInfo);
-      res.json(matchInfo);
+      console.log('Match info received. Filtering data...');
+      const filteredData = matchInfo.filter(data =>
+        data.character && data.character.name === `${req.params.username}`);
+      console.log('Filtered match info sent.');
+      res.json(filteredData);
     })
     .catch(next);
 }
