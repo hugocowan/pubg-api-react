@@ -13,7 +13,10 @@ class Show extends React.Component{
     axios
       .get(`/api/telemetry/${username}/${id}/${telemetryURL}`)
       .then(res => {
-        console.log(res);
+        const matchData = res.data;
+        delete matchData.__v;
+        delete matchData._id;
+
         this.setState(res.data, () => {
           console.log(this.state);
         });

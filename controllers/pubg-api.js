@@ -119,7 +119,9 @@ function playerSeason(req, res, next) {
         });
       })
       .catch(next => {
-        if(next.message === '429 - undefined'){
+        console.log('error message: ', next.message);
+        if(next.message === '429 - undefined' ||
+           next.message === 'Error: getaddrinfo ENOTFOUND api.playbattlegrounds.com api.playbattlegrounds.com:443'){
           return showOldSeason(oldSeason);
         } else return next;
       });
