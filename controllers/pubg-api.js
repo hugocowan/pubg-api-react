@@ -1,5 +1,6 @@
 const rp = require('request-promise');
 const Season = require('../models/season');
+const Match = require('../models/match');
 
 function playerSeason(req, res, next) {
   console.log('Checking season DB...');
@@ -126,24 +127,38 @@ function playerSeason(req, res, next) {
 }
 
 function matchInfo(req, res, next) {
-  console.log('Getting detailed match info...');
+  console.log('Checking DB...');
 
-  rp({
-    method: 'GET',
-    url: `${req.params[0]}`,
-    headers: {
-      Accept: 'application/vnd.api+json'
-    },
-    json: true
-  })
-    .then(matchInfo => {
-      console.log('Match info received. Filtering data...');
-      const { username } = req.params;
+  Match
+    .find({ info: { matchId: req.params.matchId } })
+    .then(match => {
+      if(!match[0]) {
+        throw 'No match data in DB';
+      }
+      console.log('Sending match data from DB.', match);
+      res.json(match);
+    })
+    .catch(() => {
+      console.log('Getting match data...');
+      getMatch();
+    });
 
-      const matchData = {};
+  function getMatch() {
+    rp({
+      method: 'GET',
+      url: `${req.params[0]}`,
+      headers: {
+        Accept: 'application/vnd.api+json'
+      },
+      json: true
+    })
+      .then(matchInfo => {
+        const { username } = req.params;
 
-      function getCoords(username) {
-        matchData[username].coords =
+        const matchData = {};
+
+        function getCoords(username) {
+          matchData[username].coords =
           matchData[username].data.reduce((locationData, data) => {
             const location = {
               coords: data.character.location,
@@ -152,34 +167,45 @@ function matchInfo(req, res, next) {
             locationData.push(location);
             return locationData;
           }, []);
-      }
+        }
 
-      matchData[username] = {};
 
-      matchData[username].data = matchInfo.filter(data =>
-        data.character &&
-        data.character.name === `${username}`);
+        const id = matchInfo[0].MatchId.split('.');
+        // console.log(id);
 
-      getCoords(username);
+        matchData.info = {
+          matchId: id[id.length-1],
+          ping: matchInfo[0].PingQuality,
+          date: matchInfo[0]._D
+        };
 
-      const teamData = matchInfo.filter(data =>
-        data.character &&
-        data.character.name !== username &&
-        data.character.teamId === matchData[username].data[0].character.teamId);
+        matchData[username] = {};
 
-      teamData.forEach((data) => {
-        const username = data.character.name;
-        matchData[username] = matchData[username] || {};
-        matchData[username].data = matchData[username].data || [];
-        matchData[username].data.push(data);
+        matchData[username].data = matchInfo.filter(data =>
+          data.character &&
+          data.character.name === `${username}`);
+
         getCoords(username);
-      });
 
+        const teamData = matchInfo.filter(data =>
+          data.character &&
+          data.character.name !== username &&
+          data.character.teamId === matchData[username].data[0].character.teamId);
 
-      console.log('Filtered match info sent.');
-      res.json(matchData);
-    })
-    .catch(next);
+        teamData.forEach((data) => {
+          const username = data.character.name;
+          matchData[username] = matchData[username] || {};
+          matchData[username].data = matchData[username].data || [];
+          matchData[username].data.push(data);
+          getCoords(username);
+        });
+
+        console.log('Filtered match info sent.', matchData);
+        Match.create(matchData);
+        res.json(matchData);
+      })
+      .catch(next);
+  }
 }
 
 module.exports = {

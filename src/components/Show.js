@@ -9,9 +9,9 @@ class Show extends React.Component{
 
   componentDidMount() {
     const { telemetryURL } = this.props.location.state;
-    const { username } = this.props.match.params;
+    const { username, matchId } = this.props.match.params;
     axios
-      .get(`/api/telemetry/${username}/${telemetryURL}`)
+      .get(`/api/telemetry/${username}/${matchId}/${telemetryURL}`)
       .then(res => {
         console.log(res);
         this.setState(res.data, () => {
@@ -21,7 +21,8 @@ class Show extends React.Component{
   }
 
   render(){
-    const players = Object.keys(this.state);
+    const players =
+      Object.keys(this.state).filter(key => key !== 'info');
     if(!players[0]) return (
       <div>
         <Navbar

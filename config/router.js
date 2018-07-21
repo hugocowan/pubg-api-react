@@ -5,6 +5,6 @@ const pubgapi = require('../controllers/pubg-api');
 
 router.get('/:username', pubgapi.season);
 // router.get('/:username', season.index);
-router.get('/telemetry/:username/*', pubgapi.match);
+router.get('/telemetry/:username/:matchId/*', pubgapi.match);
 
 module.exports = router;
