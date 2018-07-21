@@ -130,16 +130,17 @@ function matchInfo(req, res, next) {
   console.log('Checking DB...');
 
   Match
-    .find({ info: { matchId: req.params.matchId } })
+    .findOne({ 'info.matchId': req.params.matchId })
     .then(match => {
-      if(!match[0]) {
+      if(!match) {
+        console.log('No match found in DB...');
         throw 'No match data in DB';
       }
-      console.log('Sending match data from DB.', match);
+      console.log('Sending match data from DB.');
       res.json(match);
     })
     .catch(() => {
-      console.log('Getting match data...');
+      console.log('Requesting match data...');
       getMatch();
     });
 
@@ -200,7 +201,7 @@ function matchInfo(req, res, next) {
           getCoords(username);
         });
 
-        console.log('Filtered match info sent.', matchData);
+        console.log('Filtered match info sent.');
         Match.create(matchData);
         res.json(matchData);
       })

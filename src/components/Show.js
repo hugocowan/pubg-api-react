@@ -9,9 +9,9 @@ class Show extends React.Component{
 
   componentDidMount() {
     const { telemetryURL } = this.props.location.state;
-    const { username, matchId } = this.props.match.params;
+    const { username, id } = this.props.match.params;
     axios
-      .get(`/api/telemetry/${username}/${matchId}/${telemetryURL}`)
+      .get(`/api/telemetry/${username}/${id}/${telemetryURL}`)
       .then(res => {
         console.log(res);
         this.setState(res.data, () => {
