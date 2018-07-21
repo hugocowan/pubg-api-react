@@ -45,8 +45,10 @@ class Show extends React.Component{
           Team: {players.map((player, index) =>
             players.length !== index+1 ? `${player}, ` : `${player}.`)}
           <br />
-          WIP. See printed arrays below, or in the console. F12 or CMD+ALT+i.
+
+          Ranking: {this.state[players[0]].data[this.state[players[0]].data.length-1].character.ranking}
         </p>
+        <p>WIP. See printed arrays below, or in the console. F12 or CMD+ALT+i.</p>
         <pre>{JSON.stringify(this.state, null, 2)}</pre>
       </div>
     );
