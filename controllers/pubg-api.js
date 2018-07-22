@@ -157,16 +157,27 @@ function matchInfo(req, res, next) {
     })
       .then(matchInfo => {
         const { username } = req.params;
-
         const matchData = {};
+        const teams = [];
+        const id = matchInfo[0].MatchId.split('.');
 
         function getValues(username) {
           let index = 0;
 
           matchData[username].coords =
           matchData[username].data.reduce((locationData, data) => {
+            let coords;
+
+            data.character ? coords = data.character.location :
+              data.attacker && data.attacker.name === username ?
+                coords = data.attacker.name :
+                data.killer && data.killer.name === username ?
+                  coords = data.killer.name :
+                  data.victim && data.victim.name === username ?
+                    coords = data.victim.name : coords = null;
+
             const location = {
-              coords: data.character.location,
+              coords: coords,
               time: data._D
             };
             locationData.push(location);
@@ -175,7 +186,6 @@ function matchInfo(req, res, next) {
 
           matchData[username].avgFPS =
           matchData[username].data.reduce((total, data) => {
-            console.log(data.maxFPS);
             if(data.maxFPS) {
               index += 1;
               return total + data.maxFPS;
@@ -187,28 +197,39 @@ function matchInfo(req, res, next) {
           });
         }
 
+        matchInfo.forEach(data => {
+          if(data.character && !teams.includes(data.character.teamId))
+            teams.push(data.character.teamId);
+        });
 
-        const id = matchInfo[0].MatchId.split('.');
         // console.log(id);
 
         matchData.info = {
           matchId: id[id.length-1],
           ping: matchInfo[0].PingQuality,
-          date: matchInfo[0]._D
+          date: matchInfo[0]._D,
+          teams: teams.length - 1
         };
 
         matchData[username] = {};
 
         matchData[username].data = matchInfo.filter(data =>
-          data.character &&
-          data.character.name === `${username}`);
+          (data.character && data.character.name === username) ||
+          (data.attacker && data.attacker.name === username) ||
+          (data.killer && data.killer.name === username) ||
+          (data.victim && data.victim.name === username));
 
         getValues(username);
 
         const teamData = matchInfo.filter(data =>
-          data.character &&
-          data.character.name !== username &&
-          data.character.teamId === matchData[username].data[0].character.teamId);
+          (data.character && data.character.name !== username &&
+           data.character.teamId === matchData[username].data[0].character.teamId) ||
+          (data.attacker && data.attacker.name !== username &&
+           data.attacker.teamId === matchData[username].data[0].character.teamId) ||
+          (data.killer && data.killer.name !== username &&
+           data.killer.teamId === matchData[username].data[0].character.teamId) ||
+          (data.victim && data.victim.name !== username &&
+           data.victim.teamId === matchData[username].data[0].character.teamId));
 
         teamData.forEach((data) => {
           const username = data.character.name;

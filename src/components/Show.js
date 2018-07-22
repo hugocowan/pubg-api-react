@@ -9,6 +9,7 @@ class Show extends React.Component{
 
   componentDidMount() {
     const { telemetryURL } = this.props.location.state;
+    console.log(telemetryURL);
     const { username, id } = this.props.match.params;
     axios
       .get(`/api/telemetry/${username}/${id}/${telemetryURL}`)
@@ -66,7 +67,7 @@ class Show extends React.Component{
             Ranking:{' '}
             {this.getOrdinal(this.state[players[0]]
               .data[this.state[players[0]].data.length-1]
-              .character.ranking)} place.
+              .character.ranking)}/{this.state.info.teams}.
           </p>
 
           <p>
