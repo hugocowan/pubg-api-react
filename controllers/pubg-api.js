@@ -138,11 +138,16 @@ function matchInfo(req, res, next) {
         console.log('No match found in DB...');
         throw 'No match data in DB';
       }
+      // console.log('Filtering data...');
+      Object.keys(match.toJSON())
+        .filter(key => key !== 'info' && key !== '__v' && key !== '_id')
+        .forEach(playerName => getValues(playerName, match.toJSON()));
+
       console.log('Sending match data from DB.');
       res.json(match);
     })
-    .catch(() => {
-      console.log('Requesting match data...');
+    .catch((next) => {
+      console.log('Requesting match data...', next.message);
       getMatch();
     });
 
@@ -155,108 +160,131 @@ function matchInfo(req, res, next) {
       },
       json: true
     })
-      .then(matchInfo => {
-        const { username } = req.params;
-        const matchData = {};
-        const teams = [];
-        const teamMates = [];
-        const id = matchInfo[0].MatchId.split('.');
-
-        function getValues(username) {
-          let index = 0;
-
-          matchData[username].coords =
-          matchData[username].data.reduce((locationData, data) => {
-            let coords;
-
-            data.character ? coords = data.character.location :
-              data.attacker && data.attacker.name === username ?
-                coords = data.attacker.location :
-                data.killer && data.killer.name === username ?
-                  coords = data.killer.location :
-                  data.victim && data.victim.name === username ?
-                    coords = data.victim.location : coords = null;
-
-            const location = {
-              coords: coords,
-              time: data._D
-            };
-            locationData.push(location);
-            return locationData;
-          }, []);
-
-          matchData[username].avgFPS =
-          matchData[username].data.reduce((total, data) => {
-            if(data.maxFPS) {
-              index += 1;
-              return total + data.maxFPS;
-            } else return total;
-          }, 0)/index;
-
-          matchData[username].data.forEach(data => {
-            if(data.elapsedTime) matchData[username].time = data.elapsedTime;
-          });
-        }
-
-        matchInfo.forEach(data => {
-          if(data.character && !teams.includes(data.character.teamId))
-            teams.push(data.character.teamId);
-        });
-
-        // console.log(id);
-
-        matchData.info = {
-          matchId: id[id.length-1],
-          ping: matchInfo[0].PingQuality,
-          date: matchInfo[0]._D,
-          teams: teams.length - 1
-        };
-
-        matchData[username] = {};
-
-        matchData[username].data = matchInfo.filter(data =>
-          (data.character && data.character.name === username) ||
-          (data.attacker && data.attacker.name === username) ||
-          (data.killer && data.killer.name === username) ||
-          (data.victim && data.victim.name === username));
-
-        getValues(username);
-
-        const teamData = matchInfo.filter(data =>
-          (data.character && data.character.name !== username &&
-           data.character.teamId === matchData[username].data[0].character.teamId) ||
-          (data.attacker && data.attacker.name !== username &&
-           data.attacker.teamId === matchData[username].data[0].character.teamId) ||
-          (data.killer && data.killer.name !== username &&
-           data.killer.teamId === matchData[username].data[0].character.teamId) ||
-          (data.victim && data.victim.name !== username &&
-           data.victim.teamId === matchData[username].data[0].character.teamId));
-
-        console.log(teamData);
-
-        teamData.forEach((data) => {
-          let username;
-
-          data.character ?
-            (username = data.character.name, teamMates.push(username)) :
-            data.attacker && teamMates.includes(data.attacker.name) ?
-              username = data.attacker.name :
-              data.killer && teamMates.includes(data.killer.name) ?
-                username = data.killer.name :
-                data.victim && teamMates.includes(data.victim.name) ?
-                  username = data.victim.name : username = null;
-
-          matchData[username] = matchData[username] || {};
-          matchData[username].data = matchData[username].data || [];
-          matchData[username].data.push(data);
-          getValues(username);
-        });
-
-        console.log('Filtered match info sent.');
-        Match.create(matchData);
-        res.json(matchData);
-      })
+      .then(matchInfo => filterMatch(matchInfo))
       .catch(next);
+  }
+
+  function filterMatch(matchInfo) {
+    const { username } = req.params;
+    const matchData = {};
+    const teams = [];
+    const teamMates = [];
+    const id = matchInfo[0].MatchId.split('.');
+
+    matchInfo.forEach(data => {
+      if(data.character && !teams.includes(data.character.teamId))
+        teams.push(data.character.teamId);
+    });
+
+    matchData.info = {
+      matchId: id[id.length-1],
+      ping: matchInfo[0].PingQuality,
+      date: matchInfo[0]._D,
+      teams: teams.length - 1
+    };
+
+    matchData[username] = {};
+
+    matchData[username].data = matchInfo.filter(data =>
+      (data.character && data.character.name === username) ||
+      (data.attacker && data.attacker.name === username) ||
+      (data.killer && data.killer.name === username) ||
+      (data.victim && data.victim.name === username));
+
+    getValues(username, matchData);
+
+    const teamData = matchInfo.filter(data =>
+      (data.character && data.character.name !== username &&
+       data.character.teamId === matchData[username].data[0].character.teamId) ||
+      (data.attacker && data.attacker.name !== username &&
+       data.attacker.teamId === matchData[username].data[0].character.teamId) ||
+      (data.killer && data.killer.name !== username &&
+       data.killer.teamId === matchData[username].data[0].character.teamId) ||
+      (data.victim && data.victim.name !== username &&
+       data.victim.teamId === matchData[username].data[0].character.teamId));
+
+    // console.log(teamData);
+
+    teamData.forEach((data) => {
+      let username;
+
+      data.character ?
+        (username = data.character.name, teamMates.push(username)) :
+        data.attacker && teamMates.includes(data.attacker.name) ?
+          username = data.attacker.name :
+          data.killer && teamMates.includes(data.killer.name) ?
+            username = data.killer.name :
+            data.victim && teamMates.includes(data.victim.name) ?
+              username = data.victim.name : username = null;
+
+      matchData[username] = matchData[username] || {};
+      matchData[username].data = matchData[username].data || [];
+      matchData[username].data.push(data);
+      getValues(username, matchData);
+    });
+
+    console.log('Filtered match info sent.');
+    Match.create(matchData);
+    res.json(matchData);
+  }
+
+  function getValues(username, matchData) {
+    console.log('Filtering player data...');
+    let index = 0;
+
+    matchData[username].coords =
+    matchData[username].data.reduce((locationData, data) => {
+      let coords;
+
+      data.character ? coords = data.character.location :
+        data.attacker && data.attacker.name === username ?
+          coords = data.attacker.location :
+          data.killer && data.killer.name === username ?
+            coords = data.killer.location :
+            data.victim && data.victim.name === username ?
+              coords = data.victim.location : coords = null;
+
+      const location = {
+        coords: coords,
+        time: data._D
+      };
+      locationData.push(location);
+      return locationData;
+    }, []);
+
+    matchData[username].death =
+    matchData[username].data.reduce((killData, data) => {
+      if(data.killer &&
+         data.killer.name === username &&
+         data._T === 'LogPlayerKill'){
+        killData.push(data);
+      }
+      return killData;
+    }, []);
+
+    matchData[username].kill =
+    matchData[username].data.reduce((killData, data) => {
+      if(data.killer &&
+         data.killer.name === username &&
+         data._T !== 'LogPlayerKill'){
+        killData.push(data);
+      }
+      return killData;
+    }, []);
+
+    matchData[username].avgFPS =
+    matchData[username].data.reduce((total, data) => {
+      if(data.maxFPS) {
+        index += 1;
+        return total + data.maxFPS;
+      } else return total;
+    }, 0)/index;
+
+
+    matchData[username].data.forEach(data => {
+      if(data.elapsedTime) matchData[username].time = data.elapsedTime;
+    });
+
   }
 }
 

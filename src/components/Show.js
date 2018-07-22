@@ -54,7 +54,7 @@ class Show extends React.Component{
           button='Back'
           url={`/matches/${this.props.match.params.username}`}
         />
-        <div>
+        <div className='show'>
           <p>
             Team: {players.map((player, index) =>
               players.length !== index+1 ? `${player}, ` : `${player}.`)}
@@ -78,9 +78,9 @@ class Show extends React.Component{
             <p key={index}>
               {`${players[index]}: ${parseInt(this.state[players[index]].avgFPS)} FPS average.`}
             </p>)}
+          <p>WIP. See printed arrays below, or in the console. F12 or CMD+ALT+i.</p>
+          <pre>{JSON.stringify(this.state, null, 2)}</pre>
         </div>
-        <p>WIP. See printed arrays below, or in the console. F12 or CMD+ALT+i.</p>
-        <pre>{JSON.stringify(this.state, null, 2)}</pre>
       </div>
     );
   }
