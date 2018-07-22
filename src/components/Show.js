@@ -44,9 +44,6 @@ class Show extends React.Component{
 
     const players = Object.keys(this.state).filter(key => key !== 'info');
     const playDate = new Date(this.state.info.date);
-    const timeSince = new Date(Date.now());
-
-    console.log(timeSince);
 
     return(
       <div>
@@ -58,25 +55,35 @@ class Show extends React.Component{
           <p>
             Team: {players.map((player, index) =>
               players.length !== index+1 ? `${player}, ` : `${player}.`)}
+            <br />
+
+            Ranking:{' '}
+            {this.getOrdinal(this.state[players[0]]
+              .data[this.state[players[0]].data.length-1]
+              .character.ranking)} / {this.state.info.teams}.
+
 
             <br />
 
             Time played: {(this.state[players[0]].time/60).toFixed(2)} minutes.
             <br />
 
-            Ranking:{' '}
-            {this.getOrdinal(this.state[players[0]]
-              .data[this.state[players[0]].data.length-1]
-              .character.ranking)}/{this.state.info.teams}.
-          </p>
-
-          <p>
             Played {moment(playDate).fromNow()}, on {playDate.toLocaleString()}.
+
+
           </p>
 
           {this.state[players[0]].avgFPS && players.map((player, index) =>
             <p key={index}>
-              {`${players[index]}: ${parseInt(this.state[players[index]].avgFPS)} FPS average.`}
+              {`${players[index]}:`}
+              <br />
+              {this.state[players[index]].kills &&
+                `Kills – ${this.state[players[index]].kills.length},`}
+              <br />
+              {`Average FPS - ${parseInt(this.state[players[index]].avgFPS)},`}
+              <br />
+              {this.state[players[index]].death.killer &&
+                `Killed by ${this.state[players[index]].death.killer.name}.`}
             </p>)}
           <p>WIP. See printed arrays below, or in the console. F12 or CMD+ALT+i.</p>
           <pre>{JSON.stringify(this.state, null, 2)}</pre>

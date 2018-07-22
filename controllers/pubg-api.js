@@ -24,7 +24,7 @@ function playerSeason(req, res, next) {
         const seasonDate = new Date(season[0].attributes.createdAt).getTime();
         const currentDate = new Date().getTime();
         oldSeason = season[0];
-        const timer = (seasonDate + 60000 - currentDate)/1000;
+        const timer = (seasonDate + 6000000 - currentDate)/1000;
 
         if(timer <= 0){
           console.log('Timer\'s up. Getting new season...');
@@ -139,15 +139,25 @@ function matchInfo(req, res, next) {
         throw 'No match data in DB';
       }
       // console.log('Filtering data...');
-      Object.keys(match.toJSON())
-        .filter(key => key !== 'info' && key !== '__v' && key !== '_id')
-        .forEach(playerName => getValues(playerName, match.toJSON()));
+      // const matchFilter = Object.keys(match.toJSON())
+      //   .filter(key => key !== 'info' && key !== '__v' && key !== '_id')
+      //   .map(playerName => {
+      //     return getValues(playerName, match.toJSON());
+      //   });
+      // console.log(...matchFilter);
+      // console.log(Object.assign(match, ...matchFilter));
+      // match.save();
+      // console.log(match);
 
+      // return matchFilter[0];
+    })
+    .then(match => {
+      // console.log(match);
       console.log('Sending match data from DB.');
       res.json(match);
     })
     .catch((next) => {
-      console.log('Requesting match data...', next.message);
+      console.log('Requesting match data, ', next.message || 'no errors...');
       getMatch();
     });
 
@@ -253,20 +263,23 @@ function matchInfo(req, res, next) {
     }, []);
 
     matchData[username].death =
+    matchData[username].data.reduce((deathData, data) => {
+      // console.log(data);
+      if(data.killer &&
+         data.victim.name === username &&
+         data._T === 'LogPlayerKill'){
+        // console.log(data.victim.name);
+        deathData = data;
+      }
+      // console.log(deathData);
+      return deathData;
+    }, {});
+
+    matchData[username].kills =
     matchData[username].data.reduce((killData, data) => {
       if(data.killer &&
          data.killer.name === username &&
          data._T === 'LogPlayerKill'){
-        killData.push(data);
-      }
-      return killData;
-    }, []);
-
-    matchData[username].kill =
-    matchData[username].data.reduce((killData, data) => {
-      if(data.killer &&
-         data.killer.name === username &&
-         data._T !== 'LogPlayerKill'){
         killData.push(data);
       }
       return killData;
@@ -285,6 +298,7 @@ function matchInfo(req, res, next) {
       if(data.elapsedTime) matchData[username].time = data.elapsedTime;
     });
 
+    return matchData;
   }
 }
 
