@@ -160,7 +160,9 @@ function matchInfo(req, res, next) {
 
         const matchData = {};
 
-        function getCoords(username) {
+        function getValues(username) {
+          let index = 0;
+
           matchData[username].coords =
           matchData[username].data.reduce((locationData, data) => {
             const location = {
@@ -170,10 +172,7 @@ function matchInfo(req, res, next) {
             locationData.push(location);
             return locationData;
           }, []);
-        }
 
-        function getAvgFPS(username) {
-          let index = 0;
           matchData[username].avgFPS =
           matchData[username].data.reduce((total, data) => {
             console.log(data.maxFPS);
@@ -182,6 +181,10 @@ function matchInfo(req, res, next) {
               return total + data.maxFPS;
             } else return total;
           }, 0)/index;
+
+          matchData[username].data.forEach(data => {
+            if(data.elapsedTime) matchData[username].time = data.elapsedTime;
+          });
         }
 
 
@@ -200,8 +203,7 @@ function matchInfo(req, res, next) {
           data.character &&
           data.character.name === `${username}`);
 
-        getCoords(username);
-        getAvgFPS(username);
+        getValues(username);
 
         const teamData = matchInfo.filter(data =>
           data.character &&
@@ -213,8 +215,7 @@ function matchInfo(req, res, next) {
           matchData[username] = matchData[username] || {};
           matchData[username].data = matchData[username].data || [];
           matchData[username].data.push(data);
-          getCoords(username);
-          getAvgFPS(username);
+          getValues(username);
         });
 
         console.log('Filtered match info sent.');

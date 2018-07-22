@@ -50,11 +50,17 @@ class Show extends React.Component{
         <div>
           <p>
             Team: {players.map((player, index) =>
-              players.length !== index+1 ? `${player}, ` : `${player}.`)}<br />
+              players.length !== index+1 ? `${player}, ` : `${player}.`)}
+
+            <br />
+
+            Time in game: {(this.state[players[0]].time/60).toFixed(2)} minutes.               
+            <br />
+
             Ranking:{' '}
-            {this.getOrdinal(
-              this.state[players[0]].data[this.state[players[0]].data.length-1].character.ranking
-            )} place.
+            {this.getOrdinal(this.state[players[0]]
+              .data[this.state[players[0]].data.length-1]
+              .character.ranking)} place.
           </p>
 
           {this.state[players[0]].avgFPS && players.map((player, index) =>
