@@ -23,6 +23,12 @@ class Show extends React.Component{
       });
   }
 
+  getOrdinal = (number) => {
+    var suffix=['th','st','nd','rd'],
+      value=number%100;
+    return number+(suffix[(value-20)%10]||suffix[value]||suffix[0]);
+  }
+
   render(){
     const players =
       Object.keys(this.state).filter(key => key !== 'info');
@@ -41,13 +47,21 @@ class Show extends React.Component{
           button='Back'
           url={`/matches/${this.props.match.params.username}`}
         />
-        <p>
-          Team: {players.map((player, index) =>
-            players.length !== index+1 ? `${player}, ` : `${player}.`)}
-          <br />
+        <div>
+          <p>
+            Team: {players.map((player, index) =>
+              players.length !== index+1 ? `${player}, ` : `${player}.`)}<br />
+            Ranking:{' '}
+            {this.getOrdinal(
+              this.state[players[0]].data[this.state[players[0]].data.length-1].character.ranking
+            )} place.
+          </p>
 
-          Ranking: {this.state[players[0]].data[this.state[players[0]].data.length-1].character.ranking}
-        </p>
+          {this.state[players[0]].avgFPS && players.map((player, index) =>
+            <p key={index}>
+              {`${players[index]}: ${parseInt(this.state[players[index]].avgFPS)} FPS average.`}
+            </p>)}
+        </div>
         <p>WIP. See printed arrays below, or in the console. F12 or CMD+ALT+i.</p>
         <pre>{JSON.stringify(this.state, null, 2)}</pre>
       </div>

@@ -172,6 +172,18 @@ function matchInfo(req, res, next) {
           }, []);
         }
 
+        function getAvgFPS(username) {
+          let index = 0;
+          matchData[username].avgFPS =
+          matchData[username].data.reduce((total, data) => {
+            console.log(data.maxFPS);
+            if(data.maxFPS) {
+              index += 1;
+              return total + data.maxFPS;
+            } else return total;
+          }, 0)/index;
+        }
+
 
         const id = matchInfo[0].MatchId.split('.');
         // console.log(id);
@@ -189,6 +201,7 @@ function matchInfo(req, res, next) {
           data.character.name === `${username}`);
 
         getCoords(username);
+        getAvgFPS(username);
 
         const teamData = matchInfo.filter(data =>
           data.character &&
@@ -201,6 +214,7 @@ function matchInfo(req, res, next) {
           matchData[username].data = matchData[username].data || [];
           matchData[username].data.push(data);
           getCoords(username);
+          getAvgFPS(username);
         });
 
         console.log('Filtered match info sent.');
