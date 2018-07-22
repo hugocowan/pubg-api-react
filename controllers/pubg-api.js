@@ -170,11 +170,11 @@ function matchInfo(req, res, next) {
 
             data.character ? coords = data.character.location :
               data.attacker && data.attacker.name === username ?
-                coords = data.attacker.name :
+                coords = data.attacker.location :
                 data.killer && data.killer.name === username ?
-                  coords = data.killer.name :
+                  coords = data.killer.location :
                   data.victim && data.victim.name === username ?
-                    coords = data.victim.name : coords = null;
+                    coords = data.victim.location : coords = null;
 
             const location = {
               coords: coords,
@@ -232,7 +232,16 @@ function matchInfo(req, res, next) {
            data.victim.teamId === matchData[username].data[0].character.teamId));
 
         teamData.forEach((data) => {
-          const username = data.character.name;
+          let username;
+
+          data.character ? username = data.character.name :
+            data.attacker && data.attacker.name === username ?
+              username = data.attacker.name :
+              data.killer && data.killer.name === username ?
+                username = data.killer.name :
+                data.victim && data.victim.name === username ?
+                  username = data.victim.name : username = null;
+
           matchData[username] = matchData[username] || {};
           matchData[username].data = matchData[username].data || [];
           matchData[username].data.push(data);
