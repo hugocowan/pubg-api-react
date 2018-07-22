@@ -1,5 +1,6 @@
 import React from 'react';
 import axios from 'axios';
+import moment from 'moment';
 import { Link } from 'react-router-dom';
 import _ from 'lodash';
 
@@ -63,7 +64,9 @@ class Index extends React.Component{
                 <p>Map: {match.mapName}</p>
                 <p>Server: {match.shardId}</p>
                 <p>Duration: {(match.duration / 60).toFixed(2)} minutes</p>
-                <p>Played on: {playDate.toLocaleString()}</p>
+                <p>
+                  Played {moment(playDate).fromNow()}, on {playDate.toLocaleString()}.
+                </p>
                 <div className='button'>
                   <Link
                     to={{

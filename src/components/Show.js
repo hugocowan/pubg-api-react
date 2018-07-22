@@ -1,8 +1,8 @@
 import React from 'react';
 import axios from 'axios';
+import moment from 'moment';
 
 import Navbar from './Navbar';
-
 
 class Show extends React.Component{
   state = {};
@@ -30,9 +30,8 @@ class Show extends React.Component{
   }
 
   render(){
-    const players =
-      Object.keys(this.state).filter(key => key !== 'info');
-    if(!players[0]) return (
+
+    if(!this.state.info) return (
       <div>
         <Navbar
           button='Back'
@@ -41,6 +40,13 @@ class Show extends React.Component{
         <p>Loading... (this could take a while!)</p>
       </div>
     );
+
+    const players = Object.keys(this.state).filter(key => key !== 'info');
+    const playDate = new Date(this.state.info.date);
+    const timeSince = new Date(Date.now());
+
+    console.log(timeSince);
+
     return(
       <div>
         <Navbar
@@ -54,13 +60,17 @@ class Show extends React.Component{
 
             <br />
 
-            Time in game: {(this.state[players[0]].time/60).toFixed(2)} minutes.               
+            Time played: {(this.state[players[0]].time/60).toFixed(2)} minutes.
             <br />
 
             Ranking:{' '}
             {this.getOrdinal(this.state[players[0]]
               .data[this.state[players[0]].data.length-1]
               .character.ranking)} place.
+          </p>
+
+          <p>
+            Played {moment(playDate).fromNow()}, on {playDate.toLocaleString()}.
           </p>
 
           {this.state[players[0]].avgFPS && players.map((player, index) =>
