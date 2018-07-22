@@ -159,6 +159,7 @@ function matchInfo(req, res, next) {
         const { username } = req.params;
         const matchData = {};
         const teams = [];
+        const teamMates = [];
         const id = matchInfo[0].MatchId.split('.');
 
         function getValues(username) {
@@ -231,15 +232,18 @@ function matchInfo(req, res, next) {
           (data.victim && data.victim.name !== username &&
            data.victim.teamId === matchData[username].data[0].character.teamId));
 
+        console.log(teamData);
+
         teamData.forEach((data) => {
           let username;
 
-          data.character ? username = data.character.name :
-            data.attacker && data.attacker.name === username ?
+          data.character ?
+            (username = data.character.name, teamMates.push(username)) :
+            data.attacker && teamMates.includes(data.attacker.name) ?
               username = data.attacker.name :
-              data.killer && data.killer.name === username ?
+              data.killer && teamMates.includes(data.killer.name) ?
                 username = data.killer.name :
-                data.victim && data.victim.name === username ?
+                data.victim && teamMates.includes(data.victim.name) ?
                   username = data.victim.name : username = null;
 
           matchData[username] = matchData[username] || {};
