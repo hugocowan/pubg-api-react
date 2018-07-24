@@ -24,7 +24,7 @@ function playerSeason(req, res, next) {
         const seasonDate = new Date(season[0].attributes.createdAt).getTime();
         const currentDate = new Date().getTime();
         oldSeason = season[0];
-        const timer = (seasonDate + 6000000 - currentDate)/1000;
+        const timer = (seasonDate + 60000 - currentDate)/1000;
 
         if(timer <= 0){
           console.log('Timer\'s up. Getting new season...');
