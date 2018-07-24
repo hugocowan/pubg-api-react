@@ -146,8 +146,6 @@ function matchInfo(req, res, next) {
         .filter(key => matchInfo[key].username)
         .map(playerName => playerName);
 
-      console.log(playerCount);
-
       const playerNames = playerCount.map((player, index) =>
         matchInfo[`player${index+1}`].username);
 
@@ -156,10 +154,9 @@ function matchInfo(req, res, next) {
       });
 
       return Object.assign(match, ...matchFilter);
-      // return match;
+
     })
     .then(match => {
-      // console.log(match);
       match.save();
       console.log('Sending match data from DB.');
       res.json(match);
@@ -246,7 +243,6 @@ function matchInfo(req, res, next) {
       matchData[player].data = matchData[player].data || [];
       matchData[player].data.push(data);
     });
-    console.log('playerNames: ', playerNames);
 
     playerNames.forEach(username =>
       getValues(username, playerNames, matchData));
@@ -265,10 +261,13 @@ function matchInfo(req, res, next) {
 
   function getValues(username, playerNames, matchData) {
 
-    // console.log('Filtering player data...');
+    //To add a new property, add it in the schema too as an object.
+    //The if statements make sure the property is only calculated once.
+    //This avoids redoing properties and allows for new properties to be added.
+
+    console.log('Filtering player data...');
     let index = 0;
     const player = `player${playerNames.indexOf(username) + 1}`;
-    console.log(player);
 
     // console.log('username here: ', username, matchData);
 
