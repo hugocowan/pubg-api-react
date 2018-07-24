@@ -1,6 +1,7 @@
 const rp = require('request-promise');
 const Season = require('../models/season');
 const Match = require('../models/match');
+const maps = require('./maps');
 
 function playerSeason(req, res, next) {
   console.log('Checking season DB...');
@@ -157,6 +158,9 @@ function matchInfo(req, res, next) {
 
     })
     .then(match => {
+      const mapData = maps.getMap([1,2,3,4,5,6,7,8,9]);
+
+      console.log('mapData: ', mapData);
       match.save();
       console.log('Sending match data from DB.');
       res.json(match);
@@ -247,11 +251,7 @@ function matchInfo(req, res, next) {
     playerNames.forEach(username =>
       getValues(username, playerNames, matchData));
 
-    // console.log(thing, matchData);
-
-    console.log('Filtered match info sent.', matchData);
-
-
+    console.log('Filtered match info sent.');
 
     Match.create(matchData);
     res.json(matchData);
@@ -268,8 +268,6 @@ function matchInfo(req, res, next) {
     console.log('Filtering player data...');
     let index = 0;
     const player = `player${playerNames.indexOf(username) + 1}`;
-
-    // console.log('username here: ', username, matchData);
 
     if (!matchData[player].coords) matchData[player].coords =
     matchData[player].data.reduce((locationData, data) => {
@@ -325,7 +323,6 @@ function matchInfo(req, res, next) {
 
     if (!matchData[player].username) matchData[player].username = username;
 
-    return matchData;
   }
 }
 
