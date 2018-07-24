@@ -128,6 +128,7 @@ function playerSeason(req, res, next) {
   }
 }
 
+
 function matchInfo(req, res, next) {
   console.log('Checking DB...');
 
@@ -138,28 +139,37 @@ function matchInfo(req, res, next) {
         console.log('No match found in DB...');
         throw 'No match data in DB';
       }
-      // console.log('Filtering data...');
-      // const matchFilter = Object.keys(match.toJSON())
-      //   .filter(key => key !== 'info' && key !== '__v' && key !== '_id')
-      //   .map(playerName => {
-      //     return getValues(playerName, match.toJSON());
-      //   });
-      // console.log(...matchFilter);
-      // console.log(Object.assign(match, ...matchFilter));
-      // match.save();
-      // console.log(match);
 
-      // return matchFilter[0];
+      const matchInfo = match._doc;
+
+      const playerCount = Object.keys(matchInfo)
+        .filter(key => matchInfo[key].username)
+        .map(playerName => playerName);
+
+      console.log(playerCount);
+
+      const playerNames = playerCount.map((player, index) =>
+        matchInfo[`player${index+1}`].username);
+
+      const matchFilter = playerNames.map(username => {
+        return getValues(username, playerNames, matchInfo);
+      });
+
+      return Object.assign(match, ...matchFilter);
+      // return match;
     })
     .then(match => {
       // console.log(match);
+      match.save();
       console.log('Sending match data from DB.');
       res.json(match);
     })
     .catch((next) => {
-      console.log('Requesting match data, ', next.message || 'no errors...');
+      console.log('Requesting match data, ', `next.message: '${next.message}'.` || 'no errors...');
       getMatch();
     });
+
+
 
   function getMatch() {
     rp({
@@ -174,12 +184,16 @@ function matchInfo(req, res, next) {
       .catch(next);
   }
 
+
+
   function filterMatch(matchInfo) {
+
     const { username } = req.params;
+    const playerNames = [username];
     const matchData = {};
     const teams = [];
-    const teamMates = [];
     const id = matchInfo[0].MatchId.split('.');
+
 
     matchInfo.forEach(data => {
       if(data.character && !teams.includes(data.character.teamId))
@@ -193,66 +207,81 @@ function matchInfo(req, res, next) {
       teams: teams.length - 1
     };
 
-    matchData[username] = {};
+    matchData.player1 = {};
 
-    matchData[username].data = matchInfo.filter(data =>
+    matchData.player1.data = matchInfo.filter(data =>
       (data.character && data.character.name === username) ||
       (data.attacker && data.attacker.name === username) ||
       (data.killer && data.killer.name === username) ||
       (data.victim && data.victim.name === username));
 
-    getValues(username, matchData);
+    getValues(username, playerNames, matchData);
 
     const teamData = matchInfo.filter(data =>
       (data.character && data.character.name !== username &&
-       data.character.teamId === matchData[username].data[0].character.teamId) ||
+       data.character.teamId === matchData.player1.data[0].character.teamId) ||
       (data.attacker && data.attacker.name !== username &&
-       data.attacker.teamId === matchData[username].data[0].character.teamId) ||
+       data.attacker.teamId === matchData.player1.data[0].character.teamId) ||
       (data.killer && data.killer.name !== username &&
-       data.killer.teamId === matchData[username].data[0].character.teamId) ||
+       data.killer.teamId === matchData.player1.data[0].character.teamId) ||
       (data.victim && data.victim.name !== username &&
-       data.victim.teamId === matchData[username].data[0].character.teamId));
+       data.victim.teamId === matchData.player1.data[0].character.teamId));
 
-    // console.log(teamData);
 
     teamData.forEach((data) => {
       let username;
 
-      data.character ?
-        (username = data.character.name, teamMates.push(username)) :
-        data.attacker && teamMates.includes(data.attacker.name) ?
+      data.character && !playerNames.includes(data.character.name) ?
+        (username = data.character.name, playerNames.push(username)) :
+        data.attacker && playerNames.includes(data.attacker.name) ?
           username = data.attacker.name :
-          data.killer && teamMates.includes(data.killer.name) ?
+          data.killer && playerNames.includes(data.killer.name) ?
             username = data.killer.name :
-            data.victim && teamMates.includes(data.victim.name) ?
-              username = data.victim.name : username = null;
+            data.victim && playerNames.includes(data.victim.name) ?
+              username = data.victim.name : username = data.character.name;
 
-      matchData[username] = matchData[username] || {};
-      matchData[username].data = matchData[username].data || [];
-      matchData[username].data.push(data);
-      getValues(username, matchData);
+      const player = `player${playerNames.indexOf(username) + 1}`;
+
+      matchData[player] = matchData[player] || {};
+      matchData[player].data = matchData[player].data || [];
+      matchData[player].data.push(data);
     });
+    console.log('playerNames: ', playerNames);
 
-    console.log('Filtered match info sent.');
+    playerNames.forEach(username =>
+      getValues(username, playerNames, matchData));
+
+    // console.log(thing, matchData);
+
+    console.log('Filtered match info sent.', matchData);
+
+
+
     Match.create(matchData);
     res.json(matchData);
   }
 
-  function getValues(username, matchData) {
-    console.log('Filtering player data...');
+
+
+  function getValues(username, playerNames, matchData) {
+
+    // console.log('Filtering player data...');
     let index = 0;
+    const player = `player${playerNames.indexOf(username) + 1}`;
+    console.log(player);
 
-    matchData[username].coords =
-    matchData[username].data.reduce((locationData, data) => {
-      let coords;
+    // console.log('username here: ', username, matchData);
 
-      data.character ? coords = data.character.location :
+    matchData[player].coords =
+    matchData[player].data.reduce((locationData, data) => {
+
+      const coords = data.character ? data.character.location :
         data.attacker && data.attacker.name === username ?
-          coords = data.attacker.location :
+          data.attacker.location :
           data.killer && data.killer.name === username ?
-            coords = data.killer.location :
+            data.killer.location :
             data.victim && data.victim.name === username ?
-              coords = data.victim.location : coords = null;
+              data.victim.location : null;
 
       const location = {
         coords: coords,
@@ -262,21 +291,18 @@ function matchInfo(req, res, next) {
       return locationData;
     }, []);
 
-    matchData[username].death =
-    matchData[username].data.reduce((deathData, data) => {
-      // console.log(data);
+    matchData[player].death =
+    matchData[player].data.reduce((deathData, data) => {
       if(data.killer &&
          data.victim.name === username &&
          data._T === 'LogPlayerKill'){
-        // console.log(data.victim.name);
         deathData = data;
       }
-      // console.log(deathData);
       return deathData;
     }, {});
 
-    matchData[username].kills =
-    matchData[username].data.reduce((killData, data) => {
+    matchData[player].kills =
+    matchData[player].data.reduce((killData, data) => {
       if(data.killer &&
          data.killer.name === username &&
          data._T === 'LogPlayerKill'){
@@ -285,8 +311,8 @@ function matchInfo(req, res, next) {
       return killData;
     }, []);
 
-    matchData[username].avgFPS =
-    matchData[username].data.reduce((total, data) => {
+    matchData[player].avgFPS =
+    matchData[player].data.reduce((total, data) => {
       if(data.maxFPS) {
         index += 1;
         return total + data.maxFPS;
@@ -294,9 +320,11 @@ function matchInfo(req, res, next) {
     }, 0)/index;
 
 
-    matchData[username].data.forEach(data => {
-      if(data.elapsedTime) matchData[username].time = data.elapsedTime;
+    matchData[player].data.forEach(data => {
+      if(data.elapsedTime) matchData[player].time = data.elapsedTime;
     });
+
+    matchData[player].username = username;
 
     return matchData;
   }

@@ -17,6 +17,7 @@ class Show extends React.Component{
         const matchData = res.data;
         delete matchData.__v;
         delete matchData._id;
+        delete matchData.id;
 
         this.setState(res.data, () => {
           console.log(this.state);
@@ -54,13 +55,13 @@ class Show extends React.Component{
         <div className='show'>
           <p>
             Team: {players.map((player, index) =>
-              players.length !== index+1 ? `${player}, ` : `${player}.`)}
+              players.length !== index+1 ? `${this.state[player].username}, ` : `${this.state[player].username}.`)}
             <br />
 
-            Ranking:{' '}
-            {this.getOrdinal(this.state[players[0]]
-              .data[this.state[players[0]].data.length-1]
-              .character.ranking)} / {this.state.info.teams}.
+            {this.state[players[0]].data[0] && `Ranking:
+            ${this.getOrdinal(this.state[players[0]]
+        .data[this.state[players[0]].data.length-1]
+        .character.ranking)} / ${this.state.info.teams}.`}
 
 
             <br />
@@ -73,18 +74,21 @@ class Show extends React.Component{
 
           </p>
 
-          {this.state[players[0]].avgFPS && players.map((player, index) =>
-            <p key={index}>
-              {`${players[index]}:`}
+          {this.state[players[0]].kills && players.map((player, index) =>
+            <div key={index} className='blue'>
+              {`${this.state[player].username}:`}
               <br />
               {this.state[players[index]].kills &&
                 `Kills – ${this.state[players[index]].kills.length},`}
               <br />
-              {`Average FPS - ${parseInt(this.state[players[index]].avgFPS)},`}
-              <br />
-              {this.state[players[index]].death.killer &&
+              {this.state[players[index]].avgFPS &&
+                <div>
+                Average FPS – {parseInt(this.state[players[index]].avgFPS)},
+                  <br />
+                </div>}
+              {this.state[players[index]].death &&
                 `Killed by ${this.state[players[index]].death.killer.name}.`}
-            </p>)}
+            </div>)}
           <p>WIP. See printed arrays below, or in the console. F12 or CMD+ALT+i.</p>
           <pre>{JSON.stringify(this.state, null, 2)}</pre>
         </div>

@@ -13,4 +13,6 @@ seasonSchema.query.byName = function(name) {
   return this.where({ name });
 };
 
+seasonSchema.set('toJSON', { virtuals: true });
+
 module.exports = mongoose.model('Season', seasonSchema);
