@@ -272,7 +272,7 @@ function matchInfo(req, res, next) {
 
     // console.log('username here: ', username, matchData);
 
-    matchData[player].coords =
+    if (!matchData[player].coords) matchData[player].coords =
     matchData[player].data.reduce((locationData, data) => {
 
       const coords = data.character ? data.character.location :
@@ -291,7 +291,7 @@ function matchInfo(req, res, next) {
       return locationData;
     }, []);
 
-    matchData[player].death =
+    if (!matchData[player].death) matchData[player].death =
     matchData[player].data.reduce((deathData, data) => {
       if(data.killer &&
          data.victim.name === username &&
@@ -301,7 +301,7 @@ function matchInfo(req, res, next) {
       return deathData;
     }, {});
 
-    matchData[player].kills =
+    if (!matchData[player].kills) matchData[player].kills =
     matchData[player].data.reduce((killData, data) => {
       if(data.killer &&
          data.killer.name === username &&
@@ -311,7 +311,7 @@ function matchInfo(req, res, next) {
       return killData;
     }, []);
 
-    matchData[player].avgFPS =
+    if (!matchData[player].avgFPS) matchData[player].avgFPS =
     matchData[player].data.reduce((total, data) => {
       if(data.maxFPS) {
         index += 1;
@@ -320,11 +320,11 @@ function matchInfo(req, res, next) {
     }, 0)/index;
 
 
-    matchData[player].data.forEach(data => {
+    if (!matchData[player].time) matchData[player].data.forEach(data => {
       if(data.elapsedTime) matchData[player].time = data.elapsedTime;
     });
 
-    matchData[player].username = username;
+    if (!matchData[player].username) matchData[player].username = username;
 
     return matchData;
   }
