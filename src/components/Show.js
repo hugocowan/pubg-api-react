@@ -105,7 +105,7 @@ class Show extends React.Component{
                 `Killed by ${this.state[players[index]].death.killer.name}.`}
             </div>)}
           <p>WIP. See printed arrays below, or in the console. F12 or CMD+ALT+i.</p>
-          {!this.state.map && <div className='button'>
+          {!this.state.map && this.state.player1.mapData && <div className='button'>
             <button onClick={(e)=> this.showMap(e)}>Show map</button>
           </div>}
           <div id='image' onLoad={(e)=> this.showMap(e)} />
