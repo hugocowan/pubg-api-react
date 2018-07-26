@@ -55,6 +55,8 @@ class Show extends React.Component{
 
     const players = Object.keys(this.state).filter(key => key !== 'info' && key !== 'map');
     const playDate = new Date(this.state.info.date);
+    const player1End =
+    this.state.player1.data[this.state.player1.data.length - 1];
 
     return(
       <div>
@@ -68,10 +70,13 @@ class Show extends React.Component{
               players.length !== index+1 ? `${this.state[player].username}, ` : `${this.state[player].username}.`)}
             <br />
 
-            {this.state[players[0]].data[0] && `Ranking:
-            ${this.getOrdinal(this.state[players[0]]
-        .data[this.state[players[0]].data.length-1]
-        .character.ranking)} / ${this.state.info.teams}.`}
+            {player1End.character && `Ranking:
+            ${this.getOrdinal(player1End.character.ranking)}
+            / ${this.state.info.teams}.`}
+
+            {player1End.victim && `Ranking:
+            ${this.getOrdinal(player1End.victim.ranking)}
+            / ${this.state.info.teams}.`}
 
 
             <br />
