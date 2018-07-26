@@ -35,7 +35,7 @@ def main():
     axes = plt.gca()
     axes.set_xlim([-200000, 1000000])
     axes.set_ylim([-1000000, 200000])
-    print json.dumps(mpld3.fig_to_dict(fig))
+    print (json.dumps(mpld3.fig_to_dict(fig)))
 
 #start process
 if __name__ == '__main__':
