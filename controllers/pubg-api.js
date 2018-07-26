@@ -158,12 +158,20 @@ function matchInfo(req, res, next) {
 
     })
     .then(match => {
-      const mapData = maps.getMap([1,2,3,4,5,6,7,8,9]);
-
-      console.log('mapData: ', mapData);
-      match.save();
-      console.log('Sending match data from DB.');
-      res.json(match);
+      if(!match.player1.mapData){
+        maps
+          .getMap(match.player1.coords)
+          .then(data => match.player1.mapData = data)
+          .then(() => {
+            console.log('Sending match data from DB.');
+            match.save();
+            res.json(match);
+          })
+          .catch(err => console.log('error in map generation: ', err));
+      } else {
+        match.save();
+        res.json(match);
+      }
     })
     .catch((next) => {
       console.log('Requesting match data, ', `next.message: '${next.message}'.` || 'no errors...');
@@ -287,6 +295,10 @@ function matchInfo(req, res, next) {
       locationData.push(location);
       return locationData;
     }, []);
+
+    // matchData.player1.mapData = {};
+
+
 
     if (!matchData[player].death) matchData[player].death =
     matchData[player].data.reduce((deathData, data) => {
