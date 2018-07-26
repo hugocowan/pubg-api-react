@@ -14,7 +14,8 @@ const matchSchema = new mongoose.Schema({
     death: {},
     data: {},
     coords: {},
-    username: {}
+    username: {},
+    mapData: {}
   },
   player2: {
     avgFPS: {},

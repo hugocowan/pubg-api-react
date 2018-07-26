@@ -1,3 +1,5 @@
+/*global mpld3*/
+
 import React from 'react';
 import axios from 'axios';
 import moment from 'moment';
@@ -5,7 +7,9 @@ import moment from 'moment';
 import Navbar from './Navbar';
 
 class Show extends React.Component{
-  state = {};
+  state = {
+    map: false
+  };
 
   componentDidMount() {
     const { telemetryURL } = this.props.location.state;
@@ -31,6 +35,12 @@ class Show extends React.Component{
     return number+(suffix[(value-20)%10]||suffix[value]||suffix[0]);
   }
 
+  showMap = (e) => {
+    e.preventDefault();
+    mpld3.draw_figure('image', this.state.player1.mapData);
+    this.setState({ map: true });
+  }
+
   render(){
 
     if(!this.state.info) return (
@@ -43,7 +53,7 @@ class Show extends React.Component{
       </div>
     );
 
-    const players = Object.keys(this.state).filter(key => key !== 'info');
+    const players = Object.keys(this.state).filter(key => key !== 'info' && key !== 'map');
     const playDate = new Date(this.state.info.date);
 
     return(
@@ -90,7 +100,12 @@ class Show extends React.Component{
                 `Killed by ${this.state[players[index]].death.killer.name}.`}
             </div>)}
           <p>WIP. See printed arrays below, or in the console. F12 or CMD+ALT+i.</p>
+          {!this.state.map && <div className='button'>
+            <button onClick={(e)=> this.showMap(e)}>Show map</button>
+          </div>}
+          <div id='image' onLoad={(e)=> this.showMap(e)} />
           <pre>{JSON.stringify(this.state, null, 2)}</pre>
+
         </div>
       </div>
     );
