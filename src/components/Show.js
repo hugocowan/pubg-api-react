@@ -70,13 +70,15 @@ class Show extends React.Component{
               players.length !== index+1 ? `${this.state[player].username}, ` : `${this.state[player].username}.`)}
             <br />
 
-            {player1End.character && `Ranking:
+            {player1End.character ? `Ranking:
             ${this.getOrdinal(player1End.character.ranking)}
-            / ${this.state.info.teams}.`}
-
-            {player1End.victim && `Ranking:
+            / ${this.state.info.teams}.` :
+              player1End.victim &&
+              player1End.victim.name === this.state.player1.username ? `Ranking:
             ${this.getOrdinal(player1End.victim.ranking)}
-            / ${this.state.info.teams}.`}
+            / ${this.state.info.teams}.` : `Ranking:
+          ${this.getOrdinal(player1End.killer.ranking)}
+          / ${this.state.info.teams}.`}
 
 
             <br />
@@ -105,7 +107,7 @@ class Show extends React.Component{
                 `Killed by ${this.state[players[index]].death.killer.name}.`}
             </div>)}
           <p>WIP. See printed arrays below, or in the console. F12 or CMD+ALT+i.</p>
-          {!this.state.map && this.state.player1.mapData && <div className='button'>
+          {!this.state.map && <div className='button'>
             <button onClick={(e)=> this.showMap(e)}>Show map</button>
           </div>}
           <div id='image' onLoad={(e)=> this.showMap(e)} />

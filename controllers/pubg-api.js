@@ -261,8 +261,23 @@ function matchInfo(req, res, next) {
 
     console.log('Filtered match info sent.');
 
-    Match.create(matchData);
-    res.json(matchData);
+    if(!matchData.player1.mapData){
+      maps
+        .getMap(matchData.player1.coords)
+        .then(data => matchData.player1.mapData = data)
+        .then(() => {
+          console.log('Sending match data from DB.');
+          Match.create(matchData);
+          res.json(matchData);
+        })
+        .catch(err => console.log('error in map generation: ', err));
+    } else {
+      Match.create(matchData);
+      res.json(matchData);
+    }
+
+    // Match.create(matchData);
+    // res.json(matchData);
   }
 
 
