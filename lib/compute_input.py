@@ -1,8 +1,8 @@
 ## compute_input.py
 
 import random
-import sys, json, numpy as np
 import matplotlib.pyplot as plt, mpld3
+import sys, json, numpy as np
 
 #Read data from stdin
 def read_in():
