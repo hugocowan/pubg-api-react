@@ -1,7 +1,7 @@
 ## compute_input.py
 
 import matplotlib.pyplot as plt, mpld3
-plt.use('Agg')
+matplotlib.use('Agg')
 import random
 import sys, json, numpy as np
 
