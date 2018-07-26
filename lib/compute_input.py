@@ -1,7 +1,8 @@
 ## compute_input.py
 
-import random
 import matplotlib.pyplot as plt, mpld3
+plt.use('Agg')
+import random
 import sys, json, numpy as np
 
 #Read data from stdin
