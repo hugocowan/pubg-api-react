@@ -1,48 +1,16 @@
 const mongoose = require('mongoose');
 
 const matchSchema = new mongoose.Schema({
+  id: { type: String },
+  telemetryURL: { type: String },
+  createdAt: { type: Date },
+  duration: { type: Number },
+  gameMode: { type: String },
+  mapName: { type: String },
+  shardId: { type: String },
   info: {
-    matchId: { type: String },
-    ping: { type: String },
-    date: { type: Date },
-    teams: { type: Number }
-  },
-  player1: {
-    avgFPS: {},
-    time: {},
-    kills: {},
-    death: {},
-    data: {},
-    coords: {},
-    username: {},
-    mapData: {}
-  },
-  player2: {
-    avgFPS: {},
-    time: {},
-    kills: {},
-    death: {},
-    data: {},
-    coords: {},
-    username: {}
-  },
-  player3: {
-    avgFPS: {},
-    time: {},
-    kills: {},
-    death: {},
-    data: {},
-    coords: {},
-    username: {}
-  },
-  player4: {
-    avgFPS: {},
-    time: {},
-    kills: {},
-    death: {},
-    data: {},
-    coords: {},
-    username: {}
+    type: mongoose.Schema.ObjectId,
+    ref: 'MatchInfo'
   }
 });
 

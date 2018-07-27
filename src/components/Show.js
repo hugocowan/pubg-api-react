@@ -18,7 +18,7 @@ class Show extends React.Component{
     axios
       .get(`/api/telemetry/${username}/${id}/${telemetryURL}`)
       .then(res => {
-        const matchData = res.data;
+        const matchData = res.data.info;
         delete matchData.__v;
         delete matchData._id;
         delete matchData.id;
@@ -53,10 +53,10 @@ class Show extends React.Component{
       </div>
     );
 
-    const players = Object.keys(this.state).filter(key => key !== 'info' && key !== 'map');
-    const playDate = new Date(this.state.info.date);
+    const players = Object.keys(this.state.info).filter(key => key !== 'attributes');
+    const playDate = new Date(this.state.info.attributes.date);
     const player1End =
-    this.state.player1.data[this.state.player1.data.length - 1];
+    this.state.info.player1.data[this.state.info.player1.data.length - 1];
 
     return(
       <div>
@@ -67,24 +67,24 @@ class Show extends React.Component{
         <div className='show'>
           <p>
             Team: {players.map((player, index) =>
-              players.length !== index+1 ? `${this.state[player].username}, ` :
-                `${this.state[player].username}.`)}
+              players.length !== index+1 ? `${this.state.info[player].username}, ` :
+                `${this.state.info[player].username}.`)}
             <br />
 
             {player1End.character ?
               `Ranking: ${this.getOrdinal(player1End.character.ranking)} /
-              ${this.state.info.teams}.` :
+              ${this.state.info.attributes.teams}.` :
               player1End.victim &&
-              player1End.victim.name === this.state.player1.username ?
+              player1End.victim.name === this.state.info.player1.username ?
                 `Ranking: ${this.getOrdinal(player1End.victim.ranking)} /
-                ${this.state.info.teams}.` :
+                ${this.state.info.attributes.teams}.` :
                 `Ranking: ${this.getOrdinal(player1End.killer.ranking)} /
-                ${this.state.info.teams}.`}
+                ${this.state.info.attributes.teams}.`}
 
 
             <br />
 
-            Time played: {(this.state[players[0]].time/60).toFixed(2)} minutes.
+            Time played: {(this.state.info[players[0]].time/60).toFixed(2)} minutes.
             <br />
 
             Played {moment(playDate).fromNow()}, on {playDate.toLocaleString()}.
@@ -92,23 +92,23 @@ class Show extends React.Component{
 
           </p>
 
-          {this.state[players[0]].kills && players.map((player, index) =>
+          {this.state.info[players[0]].kills && players.map((player, index) =>
             <div key={index} className='blue'>
-              {`${this.state[player].username}:`}
+              {`${this.state.info[player].username}:`}
               <br />
-              {this.state[players[index]].kills &&
-                `Kills – ${this.state[players[index]].kills.length},`}
+              {this.state.info[players[index]].kills &&
+                `Kills – ${this.state.info[players[index]].kills.length},`}
               <br />
-              {this.state[players[index]].avgFPS &&
+              {this.state.info[players[index]].avgFPS &&
                 <div>
-                Average FPS – {parseInt(this.state[players[index]].avgFPS)},
+                Average FPS – {parseInt(this.state.info[players[index]].avgFPS)},
                   <br />
                 </div>}
-              {this.state[players[index]].death &&
-                `Killed by ${this.state[players[index]].death.killer.name}.`}
+              {this.state.info[players[index]].death &&
+                `Killed by ${this.state.info[players[index]].death.killer.name}.`}
             </div>)}
           <p>WIP. See printed arrays below, or in the console. F12 or CMD+ALT+i.</p>
-          {!this.state.map && <div className='button'>
+          {!this.state.info.map && <div className='button'>
             <button onClick={(e)=> this.showMap(e)}>Show map</button>
           </div>}
           <div id='image' onLoad={(e)=> this.showMap(e)} />

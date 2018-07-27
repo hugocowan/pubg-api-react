@@ -1,7 +1,13 @@
 const rp = require('request-promise');
 const Season = require('../models/season');
+const MatchInfo = require('../models/matchInfo');
 const Match = require('../models/match');
 const maps = require('./maps');
+
+//I want to make a season containing all match info.
+//The season's ID is based off of the year/month.
+//The season contains all matches.
+//Each match contains all matchInfo.
 
 function playerSeason(req, res, next) {
   console.log('Checking season DB...');
@@ -9,22 +15,19 @@ function playerSeason(req, res, next) {
   let oldSeason;
   const matchesArray = [];
 
-  const promise = new Promise(resolve => {
-    resolve('This is just to allow for a catch block!');
-  });
-
   Season
     .find()
     .byName(req.params.username)
+    .populate('matches')
     .then(season => {
       if(!season[0]) {
         console.log('No old season available. Getting new season...');
         getNewSeason();
       } else {
 
+        oldSeason = season[0];
         const seasonDate = new Date(season[0].attributes.createdAt).getTime();
         const currentDate = new Date().getTime();
-        oldSeason = season[0];
         const timer = (seasonDate + 60000 - currentDate)/1000;
 
         if(timer <= 0){
@@ -43,12 +46,12 @@ function playerSeason(req, res, next) {
 
   function showOldSeason(oldSeason) {
     console.log('Season sent.');
-    promise
-      .then(() => {
-        if(!oldSeason) throw 'Too many requests.';
-        res.json(oldSeason);
-      })
-      .catch(next);
+
+    new Promise((resolve, reject) => {
+      if(!oldSeason) reject('Too many requests.');
+      resolve(res.json(oldSeason));
+    })
+      .catch(next => console.log(next.message || next));
   }
 
   function showNewSeason(seasonData) {
@@ -61,6 +64,7 @@ function playerSeason(req, res, next) {
   }
 
   function getNewSeason() {
+
     rp({
       method: 'GET',
       url: `https://api.playbattlegrounds.com/shards/pc-eu/players?filter[playerNames]=${req.params.username}`,
@@ -74,8 +78,11 @@ function playerSeason(req, res, next) {
         console.log('Season received. Getting matches...');
 
         const seasonData = season.data[0];
+        const seasonTime = seasonData.attributes.createdAt.split('-');
         const matches = seasonData.relationships.matches.data;
+
         seasonData.name = season.data[0].attributes.name;
+        seasonData.date = `${seasonTime[0]}-${seasonTime[1]}`;
 
         if(!seasonData.relationships.matches.data[0])
           throw 'No matches available in season data! In the future I will store old values in my own DB, but for now only matches less than a week old will be shown. Also only EU matches are shown. Also a WIP. :p';
@@ -109,7 +116,7 @@ function playerSeason(req, res, next) {
                     duration: attrs.duration,
                     gameMode: attrs.gameMode,
                     mapName: maps[attrs.mapName],
-                    // isCustomMatch: attrs.isCustomMatch,
+                    // isCustomMatchInfo: attrs.isCustomMatchInfo,
                     // stats: attrs.stats,
                     // tags: attrs.tags,
                     // titleId: attrs.titleId,
@@ -119,8 +126,22 @@ function playerSeason(req, res, next) {
               });
               if(matchesArray.length === matches.length){
                 console.log('All matches received. Sending matches.');
-                seasonData.matches = matchesArray;
-                showNewSeason(seasonData);
+
+                Match
+                  .create(matchesArray)
+                  .then(matches => {
+                    Season
+                      .create(season)
+                      .then(season => {
+
+                        matches.forEach(match =>
+                          season.matches.push(match));
+                        Object.assign(season, seasonData);
+
+                        return season.save();
+                      })
+                      .then(seasonData => showNewSeason(seasonData));
+                  });
               }
             });
         });
@@ -146,14 +167,14 @@ function matchInfo(req, res, next) {
   }
 
   Match
-    .findOne({ 'info.matchId': req.params.matchId })
+    .findOne({ 'id': req.params.matchId })
     .then(match => {
       if(!match) {
         console.log('No match found in DB...');
         throw 'No match data in DB';
       }
-
-      const matchInfo = match._doc;
+      console.log('match: ', match);
+      const matchInfo = match._doc.info;
 
       const playerCount = Object.keys(matchInfo)
         .filter(key => matchInfo[key].username)
@@ -166,34 +187,23 @@ function matchInfo(req, res, next) {
         return getValues(username, playerNames, matchInfo);
       });
 
-      return Object.assign(match, ...matchFilter);
+      return Object.assign(match.info, ...matchFilter);
 
     })
     .then(match => {
-      // if(!match.player1.mapData){
-      //   maps
-      //     .getMap(match.player1.coords)
-      //     .then(data => match.player1.mapData = data)
-      //     .then(() => {
-      //       console.log('Sending match data from DB.');
-      //       match.save();
-      //       res.json(match);
-      //     })
-      //     .catch(err => console.log('error in map generation: ', err));
-      // } else {
-      console.log('Match data sent from DB.');
+
+      console.log('MatchInfo data sent from DB.');
       match.save();
       res.json(match);
-      // }
     })
     .catch((next) => {
       console.log('Requesting match data, ', `next.message: '${next.message}'.` || 'no errors...');
-      getMatch();
+      getMatchInfo();
     });
 
 
 
-  function getMatch() {
+  function getMatchInfo() {
     console.log('Getting matchData from PUBG API...');
     rp({
       method: 'GET',
@@ -203,18 +213,18 @@ function matchInfo(req, res, next) {
       },
       json: true
     })
-      .then(matchInfo => filterMatch(matchInfo))
+      .then(matchInfo => filterMatchInfo(matchInfo))
       .catch(next =>
         console.log('getting matchData failed, ', next.message || next));
   }
 
 
 
-  async function filterMatch(matchInfo) {
+  async function filterMatchInfo(matchInfo) {
 
-    console.log('MatchData received. Filtering data...');
+    console.log('MatchInfoData received. Filtering data...');
 
-    const { username } = req.params;
+    const { username, matchId } = req.params;
     const playerNames = [username];
     const matchData = {};
     const teams = [];
@@ -226,7 +236,7 @@ function matchInfo(req, res, next) {
         teams.push(data.character.teamId);
     });
 
-    matchData.info = {
+    matchData.attributes = {
       matchId: id[id.length-1],
       ping: matchInfo[0].PingQuality,
       date: matchInfo[0]._D,
@@ -278,8 +288,18 @@ function matchInfo(req, res, next) {
 
     console.log('Filtered match info sent.');
 
-    Match.create(matchData);
-    res.json(matchData);
+    MatchInfo
+      .create(matchData)
+      .then(matchData => {
+        Match
+          .findOne({ 'id': matchId })
+          .then(match => {
+            match.info = matchData;
+            console.log('match here: ', match);
+            match.save();
+            res.json(match);
+          });
+      });
   }
 
 
