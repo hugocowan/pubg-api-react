@@ -67,18 +67,19 @@ class Show extends React.Component{
         <div className='show'>
           <p>
             Team: {players.map((player, index) =>
-              players.length !== index+1 ? `${this.state[player].username}, ` : `${this.state[player].username}.`)}
+              players.length !== index+1 ? `${this.state[player].username}, ` :
+                `${this.state[player].username}.`)}
             <br />
 
-            {player1End.character ? `Ranking:
-            ${this.getOrdinal(player1End.character.ranking)}
-            / ${this.state.info.teams}.` :
+            {player1End.character ?
+              `Ranking: ${this.getOrdinal(player1End.character.ranking)} /
+              ${this.state.info.teams}.` :
               player1End.victim &&
-              player1End.victim.name === this.state.player1.username ? `Ranking:
-            ${this.getOrdinal(player1End.victim.ranking)}
-            / ${this.state.info.teams}.` : `Ranking:
-          ${this.getOrdinal(player1End.killer.ranking)}
-          / ${this.state.info.teams}.`}
+              player1End.victim.name === this.state.player1.username ?
+                `Ranking: ${this.getOrdinal(player1End.victim.ranking)} /
+                ${this.state.info.teams}.` :
+                `Ranking: ${this.getOrdinal(player1End.killer.ranking)} /
+                ${this.state.info.teams}.`}
 
 
             <br />
@@ -111,7 +112,7 @@ class Show extends React.Component{
             <button onClick={(e)=> this.showMap(e)}>Show map</button>
           </div>}
           <div id='image' onLoad={(e)=> this.showMap(e)} />
-          <pre>{JSON.stringify(this.state, null, 2)}</pre>
+          {/* <pre>{JSON.stringify(this.state, null, 2)}</pre> */}
 
         </div>
       </div>

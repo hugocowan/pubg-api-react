@@ -1,5 +1,10 @@
 ## compute_input.py
 
+
+# I want to:
+# Plot coords of more than one player,
+# Change map png depending on match.
+
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt, mpld3
@@ -9,7 +14,7 @@ import sys, json, numpy as np
 #Read data from stdin
 def read_in():
     lines = sys.stdin.readlines()
-    #Since our input would only be having one line, parse our JSON data from that
+    #Since our input would only has one line, parse our JSON data from that
     return json.loads(lines[0])
 
 def main():

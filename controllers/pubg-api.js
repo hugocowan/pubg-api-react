@@ -71,9 +71,14 @@ function playerSeason(req, res, next) {
       json: true
     })
       .then(season => {
+        console.log('Season received. Getting matches...');
+
         const seasonData = season.data[0];
         const matches = seasonData.relationships.matches.data;
         seasonData.name = season.data[0].attributes.name;
+
+        if(!seasonData.relationships.matches.data[0])
+          throw 'No matches available in season data! In the future I will store old values in my own DB, but for now only matches less than a week old will be shown. Also only EU matches are shown. Also a WIP. :p';
 
         matches.forEach(match => {
           rp({
@@ -113,6 +118,7 @@ function playerSeason(req, res, next) {
                 }
               });
               if(matchesArray.length === matches.length){
+                console.log('All matches received. Sending matches.');
                 seasonData.matches = matchesArray;
                 showNewSeason(seasonData);
               }
@@ -120,11 +126,11 @@ function playerSeason(req, res, next) {
         });
       })
       .catch(next => {
-        console.log('error message: ', next.message);
+        console.log('error message: ', next.message || next);
         if(next.message === '429 - undefined' ||
            next.message === 'Error: getaddrinfo ENOTFOUND api.playbattlegrounds.com api.playbattlegrounds.com:443'){
           return showOldSeason(oldSeason);
-        } else return next;
+        } else res.json({message: next.message || next});
       });
   }
 }
@@ -132,6 +138,12 @@ function playerSeason(req, res, next) {
 
 function matchInfo(req, res, next) {
   console.log('Checking DB...');
+
+  async function asyncForEach(array, callback) {
+    for (let index = 0; index < array.length; index++) {
+      await callback(array[index], index, array);
+    }
+  }
 
   Match
     .findOne({ 'info.matchId': req.params.matchId })
@@ -158,20 +170,21 @@ function matchInfo(req, res, next) {
 
     })
     .then(match => {
-      if(!match.player1.mapData){
-        maps
-          .getMap(match.player1.coords)
-          .then(data => match.player1.mapData = data)
-          .then(() => {
-            console.log('Sending match data from DB.');
-            match.save();
-            res.json(match);
-          })
-          .catch(err => console.log('error in map generation: ', err));
-      } else {
-        match.save();
-        res.json(match);
-      }
+      // if(!match.player1.mapData){
+      //   maps
+      //     .getMap(match.player1.coords)
+      //     .then(data => match.player1.mapData = data)
+      //     .then(() => {
+      //       console.log('Sending match data from DB.');
+      //       match.save();
+      //       res.json(match);
+      //     })
+      //     .catch(err => console.log('error in map generation: ', err));
+      // } else {
+      console.log('Match data sent from DB.');
+      match.save();
+      res.json(match);
+      // }
     })
     .catch((next) => {
       console.log('Requesting match data, ', `next.message: '${next.message}'.` || 'no errors...');
@@ -181,6 +194,7 @@ function matchInfo(req, res, next) {
 
 
   function getMatch() {
+    console.log('Getting matchData from PUBG API...');
     rp({
       method: 'GET',
       url: `${req.params[0]}`,
@@ -190,12 +204,15 @@ function matchInfo(req, res, next) {
       json: true
     })
       .then(matchInfo => filterMatch(matchInfo))
-      .catch(next);
+      .catch(next =>
+        console.log('getting matchData failed, ', next.message || next));
   }
 
 
 
-  function filterMatch(matchInfo) {
+  async function filterMatch(matchInfo) {
+
+    console.log('MatchData received. Filtering data...');
 
     const { username } = req.params;
     const playerNames = [username];
@@ -224,7 +241,7 @@ function matchInfo(req, res, next) {
       (data.killer && data.killer.name === username) ||
       (data.victim && data.victim.name === username));
 
-    getValues(username, playerNames, matchData);
+    await getValues(username, playerNames, matchData);
 
     const teamData = matchInfo.filter(data =>
       (data.character && data.character.name !== username &&
@@ -256,101 +273,100 @@ function matchInfo(req, res, next) {
       matchData[player].data.push(data);
     });
 
-    playerNames.forEach(username =>
-      getValues(username, playerNames, matchData));
+    asyncForEach(playerNames, async (username) =>
+      await getValues(username, playerNames, matchData));
 
     console.log('Filtered match info sent.');
 
-    if(!matchData.player1.mapData){
-      maps
-        .getMap(matchData.player1.coords)
-        .then(data => matchData.player1.mapData = data)
-        .then(() => {
-          console.log('Sending match data from DB.');
-          Match.create(matchData);
-          res.json(matchData);
-        })
-        .catch(err => console.log('error in map generation: ', err));
-    } else {
-      Match.create(matchData);
-      res.json(matchData);
-    }
-
-    // Match.create(matchData);
-    // res.json(matchData);
+    Match.create(matchData);
+    res.json(matchData);
   }
 
 
 
-  function getValues(username, playerNames, matchData) {
+  async function getValues(username, playerNames, matchData) {
 
     //To add a new property, add it in the schema too as an object.
     //The if statements make sure the property is only calculated once.
     //This avoids redoing properties and allows for new properties to be added.
+    return new Promise((resolve) => {
+      console.log('Getting values from player data...');
 
-    console.log('Filtering player data...');
-    let index = 0;
-    const player = `player${playerNames.indexOf(username) + 1}`;
+      let index = 0;
+      const player = `player${playerNames.indexOf(username) + 1}`;
 
-    if (!matchData[player].coords) matchData[player].coords =
-    matchData[player].data.reduce((locationData, data) => {
+      if (!matchData[player].coords) matchData[player].coords =
+      matchData[player].data.reduce((locationData, data) => {
 
-      const coords = data.character ? data.character.location :
-        data.attacker && data.attacker.name === username ?
-          data.attacker.location :
-          data.killer && data.killer.name === username ?
-            data.killer.location :
-            data.victim && data.victim.name === username ?
-              data.victim.location : null;
+        const coords = data.character ? data.character.location :
+          data.attacker && data.attacker.name === username ?
+            data.attacker.location :
+            data.killer && data.killer.name === username ?
+              data.killer.location :
+              data.victim && data.victim.name === username ?
+                data.victim.location : null;
 
-      const location = {
-        coords: coords,
-        time: data._D
-      };
-      locationData.push(location);
-      return locationData;
-    }, []);
+        const location = {
+          coords: coords,
+          time: data._D
+        };
+        locationData.push(location);
+        return locationData;
+      }, []);
 
-    // matchData.player1.mapData = {};
+      // matchData.player1.mapData = {};
 
-
-
-    if (!matchData[player].death) matchData[player].death =
-    matchData[player].data.reduce((deathData, data) => {
-      if(data.killer &&
-         data.victim.name === username &&
-         data._T === 'LogPlayerKill'){
-        deathData = data;
+      if(!matchData[player].mapData){
+        console.log('getting map data...');
+        maps
+          .getMap(matchData[player].coords)
+          .then(data => {
+            matchData[player].mapData = data;
+            console.log('Data values created.');
+            resolve(matchData);
+          })
+          .catch(err => console.log('error in map generation: ', err));
       }
-      return deathData;
-    }, {});
-
-    if (!matchData[player].kills) matchData[player].kills =
-    matchData[player].data.reduce((killData, data) => {
-      if(data.killer &&
-         data.killer.name === username &&
-         data._T === 'LogPlayerKill'){
-        killData.push(data);
-      }
-      return killData;
-    }, []);
-
-    if (!matchData[player].avgFPS) matchData[player].avgFPS =
-    matchData[player].data.reduce((total, data) => {
-      if(data.maxFPS) {
-        index += 1;
-        return total + data.maxFPS;
-      } else return total;
-    }, 0)/index;
 
 
-    if (!matchData[player].time) matchData[player].data.forEach(data => {
-      if(data.elapsedTime) matchData[player].time = data.elapsedTime;
+      if (!matchData[player].death) matchData[player].death =
+      matchData[player].data.reduce((deathData, data) => {
+        if(data.killer &&
+          data.victim.name === username &&
+          data._T === 'LogPlayerKill'){
+          deathData = data;
+        }
+        return deathData;
+      }, {});
+
+      if (!matchData[player].kills) matchData[player].kills =
+        matchData[player].data.reduce((killData, data) => {
+          if(data.killer &&
+            data.killer.name === username &&
+            data._T === 'LogPlayerKill'){
+            killData.push(data);
+          }
+          return killData;
+        }, []);
+
+      if (!matchData[player].avgFPS) matchData[player].avgFPS =
+          matchData[player].data.reduce((total, data) => {
+            if(data.maxFPS) {
+              index += 1;
+              return total + data.maxFPS;
+            } else return total;
+          }, 0)/index;
+
+
+      if (!matchData[player].time) matchData[player].data.forEach(data => {
+        if(data.elapsedTime) matchData[player].time = data.elapsedTime;
+      });
+
+      if (!matchData[player].username) matchData[player].username = username;
+
     });
-
-    if (!matchData[player].username) matchData[player].username = username;
-
   }
+
 }
 
 module.exports = {
