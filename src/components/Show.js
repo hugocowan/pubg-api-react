@@ -19,18 +19,9 @@ class Show extends React.Component{
     const { username, id } = this.props.match.params;
     axios
       .get(`/api/telemetry/${username}/${id}/${telemetryURL}`)
-      .then(res => {
-        const matchData = res.data.info;
-        if (matchData) {
-          delete matchData.__v;
-          delete matchData._id;
-          delete matchData.id;
-        }
-
-        this.setState(res.data, () => {
-          console.log(this.state);
-        });
-      });
+      .then(res => this.setState(res.data, () => {
+        console.log(this.state);
+      }));
   }
 
   getOrdinal = (number) => {
@@ -41,7 +32,7 @@ class Show extends React.Component{
 
   showMap = (e) => {
     e.preventDefault();
-    mpld3.draw_figure('image', this.state.info.player1.mapData);
+    mpld3.draw_figure('map', this.state.info.player1.mapData);
     this.setState({ map: true });
   }
 
@@ -51,7 +42,7 @@ class Show extends React.Component{
     let players, playDate, player1End;
 
     if(info) {
-      players = Object.keys(info).filter(key => key !== 'attributes');
+      players = Object.keys(info).filter(key => info[key].username);
       playDate = new Date(info.attributes.date);
       player1End =
       info.player1.data[info.player1.data.length - 1];
@@ -117,7 +108,7 @@ class Show extends React.Component{
           {!this.state.map && <div className='button'>
             <button onClick={(e)=> this.showMap(e)}>Show map</button>
           </div>}
-          <div id='image' onLoad={(e)=> this.showMap(e)} />
+          <div id='map' onLoad={(e)=> this.showMap(e)} />
           {/* <pre>{JSON.stringify(this.state, null, 2)}</pre> */}
 
         </div>}

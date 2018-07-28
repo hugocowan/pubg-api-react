@@ -209,7 +209,7 @@ function matchInfo(req, res, next) {
       const matchInfo = match._doc.info._doc;
 
       const playerCount = Object.keys(matchInfo)
-        .filter(key => (console.log(key), matchInfo[key].username))
+        .filter(key => matchInfo[key].username)
         .map(playerName => playerName);
 
       const playerNames = playerCount.map((player, index) =>
@@ -298,7 +298,7 @@ function matchInfo(req, res, next) {
       (data.killer && data.killer.name === username) ||
       (data.victim && data.victim.name === username));
 
-    await getValues(username, playerNames, matchData);
+    // await getValues(username, playerNames, matchData);
 
     const teamData = matchInfo.filter(data =>
       (data.character && data.character.name !== username &&
@@ -330,7 +330,7 @@ function matchInfo(req, res, next) {
       matchData[player].data.push(data);
     });
 
-    asyncForEach(playerNames, async (username) =>
+    await asyncForEach(playerNames, async (username) =>
       await getValues(username, playerNames, matchData));
 
     console.log('Filtered match info sent.');
