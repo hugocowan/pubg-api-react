@@ -13,7 +13,7 @@ function playerSeason(req, res, next) {
   console.log('Checking season DB...');
 
   let oldSeason;
-  const matchesArray = [];
+  let stillMore = true;
 
   Season
     .find()
@@ -30,7 +30,7 @@ function playerSeason(req, res, next) {
         const currentDate = new Date().getTime();
         const timer = (seasonDate + 60000 - currentDate)/1000;
 
-        if(timer <= 0){
+        if(timer){
           console.log('Timer\'s up. Getting new season...');
           getNewSeason();
 
@@ -52,6 +52,36 @@ function playerSeason(req, res, next) {
       resolve(res.json(oldSeason));
     })
       .catch(next => console.log(next.message || next));
+  }
+
+  function createSeason(seasonData, matches, newMatches, oldMatches) {
+
+    if(stillMore && (newMatches.length + oldMatches.length === matches.length)){
+      console.log('All matches received. Sending matches.');
+
+      stillMore = false;
+
+      Match
+        .create(newMatches)
+        .then(newMatches => {
+          Season
+            .create(seasonData)
+            .then(season => {
+
+              if(oldMatches && oldMatches[0])
+                oldMatches.forEach(match =>
+                  season.matches.push(match));
+              if(newMatches && newMatches[0])
+                newMatches.forEach(match =>
+                  season.matches.push(match));
+              Object.assign(season, seasonData);
+
+              return season.save();
+            })
+            .then(seasonData => showNewSeason(seasonData));
+        })
+        .catch(next);
+    }
   }
 
   function showNewSeason(seasonData) {
@@ -80,69 +110,66 @@ function playerSeason(req, res, next) {
         const seasonData = season.data[0];
         const seasonTime = seasonData.attributes.createdAt.split('-');
         const matches = seasonData.relationships.matches.data;
+        const newMatches = [];
+        const oldMatches = [];
 
         seasonData.name = season.data[0].attributes.name;
         seasonData.date = `${seasonTime[0]}-${seasonTime[1]}`;
 
         if(!seasonData.relationships.matches.data[0])
-          throw 'No matches available in season data! In the future I will store old values in my own DB, but for now only matches less than a week old will be shown. Also only EU matches are shown. Also a WIP. :p';
+          throw 'No matches available! Play a match and then come back. It can take a while for PUBG to record it!';
 
         matches.forEach(match => {
-          rp({
-            method: 'GET',
-            url: `https://api.playbattlegrounds.com/shards/pc-eu/matches/${match.id}`,
-            headers: {
-              Accept: 'application/vnd.api+json'
-            },
-            json: true
-          })
-            .then(match => {
-              const attrs = match.data.attributes;
-              const telemetryId = match.data.relationships.assets.data[0].id;
-              const maps = {
-                Erangel_Main: 'Erangel',
-                Desert_Main: 'Miramar',
-                Savage_Main: 'Sanhok'
-              };
+          Match
+            .find({id: match.id})
+            .then(matchData => {
+              if(matchData[0]) {
+                oldMatches.push(matchData[0]);
+              } else return match;
+            })
+            .then((match) => {
+              if(!match) {
+                return createSeason(seasonData, matches, newMatches, oldMatches);
+              } else if(!match) return null;
+              // console.log('match: ', match);
+              rp({
+                method: 'GET',
+                url: `https://api.playbattlegrounds.com/shards/pc-eu/matches/${match.id}`,
+                headers: {
+                  Accept: 'application/vnd.api+json'
+                },
+                json: true
+              })
+                .then(match => {
+                  const attrs = match.data.attributes;
+                  const telemetryId = match.data.relationships.assets.data[0].id;
+                  const maps = {
+                    Erangel_Main: 'Erangel',
+                    Desert_Main: 'Miramar',
+                    Savage_Main: 'Sanhok'
+                  };
 
-              match.included.forEach(asset => {
+                  match.included.forEach(asset => {
 
-                if(asset.id === telemetryId) {
+                    if(asset.id === telemetryId) {
 
-                  matchesArray.push({
-                    id: match.data.id,
-                    telemetryURL: asset.attributes.URL,
-                    createdAt: attrs.createdAt,
-                    duration: attrs.duration,
-                    gameMode: attrs.gameMode,
-                    mapName: maps[attrs.mapName],
-                    // isCustomMatchInfo: attrs.isCustomMatchInfo,
-                    // stats: attrs.stats,
-                    // tags: attrs.tags,
-                    // titleId: attrs.titleId,
-                    shardId: attrs.shardId
+                      newMatches.push({
+                        id: match.data.id,
+                        telemetryURL: asset.attributes.URL,
+                        createdAt: attrs.createdAt,
+                        duration: attrs.duration,
+                        gameMode: attrs.gameMode,
+                        mapName: maps[attrs.mapName],
+                        // isCustomMatchInfo: attrs.isCustomMatchInfo,
+                        // stats: attrs.stats,
+                        // tags: attrs.tags,
+                        // titleId: attrs.titleId,
+                        shardId: attrs.shardId
+                      });
+                    }
                   });
-                }
-              });
-              if(matchesArray.length === matches.length){
-                console.log('All matches received. Sending matches.');
-
-                Match
-                  .create(matchesArray)
-                  .then(matches => {
-                    Season
-                      .create(season)
-                      .then(season => {
-
-                        matches.forEach(match =>
-                          season.matches.push(match));
-                        Object.assign(season, seasonData);
-
-                        return season.save();
-                      })
-                      .then(seasonData => showNewSeason(seasonData));
-                  });
-              }
+                  createSeason(seasonData, matches, newMatches, oldMatches);
+                });
             });
         });
       })
@@ -168,26 +195,33 @@ function matchInfo(req, res, next) {
 
   Match
     .findOne({ 'id': req.params.matchId })
+    .populate('info')
     .then(match => {
       if(!match) {
         console.log('No match found in DB...');
-        throw 'No match data in DB';
+        throw 'No match in DB.';
       }
-      console.log('match: ', match);
-      const matchInfo = match._doc.info;
+
+      if(!match.info) {
+        console.log('No match info found in DB...');
+        throw 'No match data in DB.';
+      }
+      const matchInfo = match._doc.info._doc;
 
       const playerCount = Object.keys(matchInfo)
-        .filter(key => matchInfo[key].username)
+        .filter(key => (console.log(key), matchInfo[key].username))
         .map(playerName => playerName);
 
       const playerNames = playerCount.map((player, index) =>
         matchInfo[`player${index+1}`].username);
 
-      const matchFilter = playerNames.map(username => {
+      const playerValues = playerNames.map(username => {
         return getValues(username, playerNames, matchInfo);
       });
 
-      return Object.assign(match.info, ...matchFilter);
+      Object.assign(match.info, ...playerValues);
+
+      return match;
 
     })
     .then(match => {
@@ -197,8 +231,17 @@ function matchInfo(req, res, next) {
       res.json(match);
     })
     .catch((next) => {
-      console.log('Requesting match data, ', `next.message: '${next.message}'.` || 'no errors...');
-      getMatchInfo();
+      console.log('Requesting match data, ', next.message ||
+      next || 'no errors...');
+      if(next === 'No match data in DB.') {
+        getMatchInfo();
+      } else if(next === 'No match in DB.') {
+        res.json({
+          message: 'No match found in the database! Try going back to the homepage.',
+          button: 'Home',
+          url: '/'
+        });
+      } else next;
     });
 
 
@@ -214,15 +257,19 @@ function matchInfo(req, res, next) {
       json: true
     })
       .then(matchInfo => filterMatchInfo(matchInfo))
-      .catch(next =>
-        console.log('getting matchData failed, ', next.message || next));
+      .catch(next => {
+        console.log('getting matchData failed, ', next.message || next);
+        if(next.message === 'Error: getaddrinfo ENOTFOUND telemetry-cdn.playbattlegrounds.com telemetry-cdn.playbattlegrounds.com:443'){
+          res.json({ message: 'Couldn\'t connect to PUBG\'s servers. Check your internet connection?' });
+        }
+      });
   }
 
 
 
   async function filterMatchInfo(matchInfo) {
 
-    console.log('MatchInfoData received. Filtering data...');
+    console.log('Filtering new data...');
 
     const { username, matchId } = req.params;
     const playerNames = [username];
@@ -295,7 +342,6 @@ function matchInfo(req, res, next) {
           .findOne({ 'id': matchId })
           .then(match => {
             match.info = matchData;
-            console.log('match here: ', match);
             match.save();
             res.json(match);
           });
