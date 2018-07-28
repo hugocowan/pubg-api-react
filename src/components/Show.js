@@ -21,6 +21,7 @@ class Show extends React.Component{
       .get(`/api/telemetry/${username}/${id}/${telemetryURL}`)
       .then(res => this.setState(res.data, () => {
         console.log(this.state);
+        this.showMap();
       }));
   }
 
@@ -30,8 +31,7 @@ class Show extends React.Component{
     return number+(suffix[(value-20)%10]||suffix[value]||suffix[0]);
   }
 
-  showMap = (e) => {
-    e.preventDefault();
+  showMap = () => {
     mpld3.draw_figure('map', this.state.info.player1.mapData);
     this.setState({ map: true });
   }
@@ -104,10 +104,6 @@ class Show extends React.Component{
               {info[players[index]].death &&
                 `Killed by ${info[players[index]].death.killer.name}.`}
             </div>)}
-          <p>WIP. See printed arrays below, or in the console. F12 or CMD+ALT+i.</p>
-          {!this.state.map && <div className='button'>
-            <button onClick={(e)=> this.showMap(e)}>Show map</button>
-          </div>}
           <div id='map' onLoad={(e)=> this.showMap(e)} />
           {/* <pre>{JSON.stringify(this.state, null, 2)}</pre> */}
 

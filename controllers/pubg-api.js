@@ -184,7 +184,7 @@ function playerSeason(req, res, next) {
 }
 
 
-function matchInfo(req, res, next) {
+function matchInfo(req, res) {
   console.log('Checking DB...');
 
   async function asyncForEach(array, callback) {
