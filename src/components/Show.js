@@ -19,10 +19,14 @@ class Show extends React.Component{
     const { username, id } = this.props.match.params;
     axios
       .get(`/api/telemetry/${username}/${id}/${telemetryURL}`)
-      .then(res => this.setState(res.data, () => {
-        console.log(this.state);
-        this.showMap();
-      }));
+      .then(res => {
+        res.data.info.player1.mapData.width = window.innerWidth;
+        res.data.info.player1.mapData.height = window.innerWidth * 80/100;
+        this.setState(res.data, () => {
+          console.log(this.state);
+          this.showMap();
+        });
+      });
   }
 
   getOrdinal = (number) => {
