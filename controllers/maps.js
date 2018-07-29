@@ -20,7 +20,13 @@ function getMap(coords) {
 
     python.stdout.on('end', function() {
       // console.log('Sum of numbers = ', mapData);
-      resolve(JSON.parse(mapData));
+      const map = JSON.parse(mapData);
+      delete map.axes[0].axes[0].visible;
+      delete map.axes[0].axes[1].visible;
+      delete map.axes[0].lines[0].drawstyle;
+      map.axes[0].axesbg = '#F8F8FF';
+      map.axes[0].lines[0].linewidth = 3;
+      resolve(map);
     });
 
     python.stdin.write(JSON.stringify(coords));

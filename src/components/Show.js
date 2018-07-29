@@ -20,8 +20,6 @@ class Show extends React.Component{
     axios
       .get(`/api/telemetry/${username}/${id}/${telemetryURL}`)
       .then(res => {
-        res.data.info.player1.mapData.width = window.innerWidth;
-        res.data.info.player1.mapData.height = window.innerWidth * 80/100;
         this.setState(res.data, () => {
           console.log(this.state);
           this.showMap();
@@ -37,6 +35,8 @@ class Show extends React.Component{
 
   showMap = () => {
     const mapData = this.state.info.player1.mapData;
+    mapData.width = window.innerWidth;
+    mapData.height = window.innerWidth * 70/100;
     mpld3.draw_figure('map', mapData);
     this.setState({ map: true });
   }

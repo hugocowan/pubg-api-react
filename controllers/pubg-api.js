@@ -383,7 +383,7 @@ function matchInfo(req, res) {
 
       // matchData.player1.mapData = {};
 
-      if(!matchData[player].mapData){
+      // if(!matchData[player].mapData){
         console.log('getting map data...');
         maps
           .getMap(matchData[player].coords)
@@ -393,7 +393,7 @@ function matchInfo(req, res) {
             resolve(matchData);
           })
           .catch(err => console.log('error in map generation: ', err));
-      }
+      // }
 
 
       if (!matchData[player].death) matchData[player].death =
