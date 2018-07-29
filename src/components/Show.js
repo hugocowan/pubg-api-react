@@ -17,7 +17,7 @@ class Show extends React.Component{
     window.addEventListener('resize', this.showMap);
 
     const { telemetryURL } = this.props.location.state;
-    console.log(telemetryURL);
+    // console.log(telemetryURL);
     const { username, id } = this.props.match.params;
     axios
       .get(`/api/telemetry/${username}/${id}/${telemetryURL}`)
@@ -40,12 +40,11 @@ class Show extends React.Component{
   }
 
   showMap = () => {
-    console.log('showMap called!');
     const mapDiv = document.getElementById('map');
     while (mapDiv.firstChild) {
       mapDiv.removeChild(mapDiv.firstChild);
     }
-    
+
     const mapData = this.state.info.player1.mapData;
     mapData.width = window.innerWidth;
     mapData.height = window.innerWidth * 70/100;
@@ -81,7 +80,8 @@ class Show extends React.Component{
         {info && <div className='show'>
           <p>
             Team: {players.map((player, index) =>
-              players.length !== index+1 ? `${info[player].username}, ` :
+              players.length !== index+1 ?
+                `${info[player].username}, ` :
                 `${info[player].username}.`)}
             <br />
 

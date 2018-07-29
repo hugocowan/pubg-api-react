@@ -1,60 +1,82 @@
 const rp = require('request-promise');
-const Season = require('../models/season');
+const MatchList = require('../models/matchList');
 const MatchInfo = require('../models/matchInfo');
+const PlayerSeason = require('../models/playerSeason');
 const Match = require('../models/match');
 const maps = require('./maps');
 
-//I want to make a season containing all match info.
-//The season's ID is based off of the year/month.
-//The season contains all matches.
+//I want to make a matchList containing all match info.
+//The matchList's ID is based off of the year/month.
+//The matchList contains all matches.
 //Each match contains all matchInfo.
 
-function playerSeason(req, res, next) {
-  console.log('Checking season DB...');
+function playerMatchList(req, res, next) {
+  console.log('Checking matchList DB...');
 
-  let oldSeason;
+  let oldMatchList;
   let stillMore = true;
 
-  Season
+  MatchList
     .find()
     .byName(req.params.username)
-    .populate('matches')
-    .then(season => {
-      if(!season[0]) {
-        console.log('No old season available. Getting new season...');
-        getNewSeason();
+    .populate({
+      path: 'matches, playerSeason',
+      populate: { path: 'info' }
+    })
+    .then(matchList => {
+      if(!matchList[0]) {
+        console.log('No old matchList available. Getting new matchList...');
+        getNewMatchList();
       } else {
 
-        oldSeason = season[0];
-        const seasonDate = new Date(season[0].attributes.createdAt).getTime();
+        oldMatchList = matchList[0];
+        const matchListDate = new Date(matchList[0].attributes.createdAt).getTime();
         const currentDate = new Date().getTime();
-        const timer = (seasonDate + 60000 - currentDate)/1000;
+        const timer = (matchListDate + 60000 - currentDate)/1000;
+        // const seasonTimer = (matchListDate + 300000 - currentDate)/1000;
 
         if(timer){
-          console.log('Timer\'s up. Getting new season...');
-          getNewSeason();
+          console.log('Timer\'s up. Getting new matchList...');
+          getNewMatchList();
 
         } else {
-          console.log(`${timer} seconds remaining. Showing old season...`);
-          showOldSeason(season[0]);
+          console.log(`${timer} seconds remaining. Showing old matchList...`);
+          showOldMatchList(matchList[0]);
         }
+
       }
 
     })
     .catch(next);
 
-
-  function showOldSeason(oldSeason) {
-    console.log('Season sent.');
-
-    new Promise((resolve, reject) => {
-      if(!oldSeason) reject('Too many requests.');
-      resolve(res.json(oldSeason));
-    })
-      .catch(next => console.log(next.message || next));
+  function getPlayerSeason(matchList) {
+    console.log('Getting player season...');
+    return new Promise((resolve, reject) => {
+      if (typeof matchList.playerStats !== 'object') {
+        rp({
+          method: 'GET',
+          url: `https://api.playbattlegrounds.com/shards/pc-eu/players/${matchList.id}/seasons/division.bro.official.${matchList.date}`,
+          headers: {
+            Authorization: `Bearer ${process.env.PUBG_API_KEY}`,
+            Accept: 'application/vnd.api+json'
+          },
+          json: true
+        })
+          .then(playerSeason => {
+            PlayerSeason
+              .create(playerSeason.data.attributes.gameModeStats)
+              .then(playerSeason => {
+                console.log('Player season received.');
+                resolve(playerSeason);
+              })
+              .catch(next);
+          })
+          .catch(next);
+      } else reject(null);
+    });
   }
 
-  function createSeason(seasonData, matches, newMatches, oldMatches) {
+  function createMatchList(matchListData, matches, newMatches, oldMatches) {
 
     if(stillMore && (newMatches.length + oldMatches.length === matches.length)){
       console.log('All matches received. Sending matches.');
@@ -63,37 +85,49 @@ function playerSeason(req, res, next) {
 
       Match
         .create(newMatches)
-        .then(newMatches => {
-          Season
-            .create(seasonData)
-            .then(season => {
+        .then(() => {
+          return getPlayerSeason(matchListData);
+        })
+        .then(playerSeason => {
+          // console.log(playerSeason);
+          return MatchList
+            .create(matchListData)
+            .then(matchList => {
+              matchList.playerSeason = playerSeason;
+              Object.assign(matchList.matches, oldMatches, newMatches);
+              // console.log(matchList);
 
-              if(oldMatches && oldMatches[0])
-                oldMatches.forEach(match =>
-                  season.matches.push(match));
-              if(newMatches && newMatches[0])
-                newMatches.forEach(match =>
-                  season.matches.push(match));
-              Object.assign(season, seasonData);
-
-              return season.save();
-            })
-            .then(seasonData => showNewSeason(seasonData));
+              return matchList.save();
+            });
+        })
+        .then(matchListData => {
+          // console.log(matchListData);
+          showNewMatchList(matchListData);
         })
         .catch(next);
     }
   }
 
-  function showNewSeason(seasonData) {
-    console.log('Season sent.');
-    if(oldSeason) oldSeason.remove();
-    Season
-      .create(seasonData)
-      .then(season => res.json(season))
+  function showOldMatchList(oldMatchList) {
+    console.log('MatchList sent.');
+
+    new Promise((resolve, reject) => {
+      if(!oldMatchList) reject('Too many requests.');
+      resolve(res.json(oldMatchList));
+    })
+      .catch(next => console.log(next.message || next));
+  }
+
+  function showNewMatchList(matchListData) {
+    console.log('MatchList sent.', matchListData);
+    if(oldMatchList) oldMatchList.remove();
+    MatchList
+      .create(matchListData)
+      .then(matchList => res.json(matchList))
       .catch(next);
   }
 
-  function getNewSeason() {
+  function getNewMatchList() {
 
     rp({
       method: 'GET',
@@ -104,20 +138,22 @@ function playerSeason(req, res, next) {
       },
       json: true
     })
-      .then(season => {
-        console.log('Season received. Getting matches...');
+      .then(matchList => {
+        console.log('MatchList received. Getting matches...');
 
-        const seasonData = season.data[0];
-        const seasonTime = seasonData.attributes.createdAt.split('-');
-        const matches = seasonData.relationships.matches.data;
+        const matchListData = matchList.data[0];
+        const matchListTime = matchListData.attributes.createdAt.split('-');
+        const matches = matchListData.relationships.matches.data;
         const newMatches = [];
         const oldMatches = [];
 
-        seasonData.name = season.data[0].attributes.name;
-        seasonData.date = `${seasonTime[0]}-${seasonTime[1]}`;
+        matchListData.name = matchList.data[0].attributes.name;
+        matchListData.date = `${matchListTime[0]}-${matchListTime[1]}`;
 
-        if(!seasonData.relationships.matches.data[0])
+        if(!matchListData.relationships.matches.data[0])
           throw 'No matches available! Play a match and then come back. It can take a while for PUBG to record it!';
+
+
 
         matches.forEach(match => {
           Match
@@ -129,7 +165,7 @@ function playerSeason(req, res, next) {
             })
             .then((match) => {
               if(!match) {
-                return createSeason(seasonData, matches, newMatches, oldMatches);
+                return createMatchList(matchListData, matches, newMatches, oldMatches);
               } else if(!match) return null;
               // console.log('match: ', match);
               rp({
@@ -168,7 +204,7 @@ function playerSeason(req, res, next) {
                       });
                     }
                   });
-                  createSeason(seasonData, matches, newMatches, oldMatches);
+                  createMatchList(matchListData, matches, newMatches, oldMatches);
                 });
             });
         });
@@ -177,7 +213,7 @@ function playerSeason(req, res, next) {
         console.log('error message: ', next.message || next);
         if(next.message === '429 - undefined' ||
            next.message === 'Error: getaddrinfo ENOTFOUND api.playbattlegrounds.com api.playbattlegrounds.com:443'){
-          return showOldSeason(oldSeason);
+          return showOldMatchList(oldMatchList);
         } else res.json({message: next.message || next});
       });
   }
@@ -287,7 +323,7 @@ function matchInfo(req, res) {
       matchId: id[id.length-1],
       ping: matchInfo[0].PingQuality,
       date: matchInfo[0]._D,
-      teams: teams.length - 1
+      teams: teams.length
     };
 
     matchData.player1 = {};
@@ -300,15 +336,19 @@ function matchInfo(req, res) {
 
     // await getValues(username, playerNames, matchData);
 
-    const teamData = matchInfo.filter(data =>
+    const teamData = matchInfo.filter(data => {
+      // console.log('player 1\'s teamId: ', matchData.player1.data);
+
       (data.character && data.character.name !== username &&
-       data.character.teamId === matchData.player1.data[0].character.teamId) ||
-      (data.attacker && data.attacker.name !== username &&
-       data.attacker.teamId === matchData.player1.data[0].character.teamId) ||
-      (data.killer && data.killer.name !== username &&
-       data.killer.teamId === matchData.player1.data[0].character.teamId) ||
-      (data.victim && data.victim.name !== username &&
-       data.victim.teamId === matchData.player1.data[0].character.teamId));
+        data.character.teamId === matchData.player1.data[0].character.teamId) ||
+        (data.attacker && data.attacker.name !== username &&
+          data.attacker.teamId === matchData.player1.data[0].character.teamId) ||
+          (data.killer && data.killer.name !== username &&
+            data.killer.teamId === matchData.player1.data[0].character.teamId) ||
+            (data.victim && data.victim.name !== username &&
+              data.victim.teamId === matchData.player1.data[0].character.teamId);
+
+    });
 
 
     teamData.forEach((data) => {
@@ -436,6 +476,6 @@ function matchInfo(req, res) {
 }
 
 module.exports = {
-  season: playerSeason,
+  matchList: playerMatchList,
   match: matchInfo
 };
