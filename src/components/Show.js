@@ -14,6 +14,8 @@ class Show extends React.Component{
   };
 
   componentDidMount() {
+    window.addEventListener('resize', this.showMap);
+
     const { telemetryURL } = this.props.location.state;
     console.log(telemetryURL);
     const { username, id } = this.props.match.params;
@@ -27,6 +29,10 @@ class Show extends React.Component{
       });
   }
 
+  componentWillUnmount() {
+    window.removeEventListener('resize', this.showMap);
+  }
+
   getOrdinal = (number) => {
     var suffix=['th','st','nd','rd'],
       value=number%100;
@@ -34,6 +40,12 @@ class Show extends React.Component{
   }
 
   showMap = () => {
+    console.log('showMap called!');
+    const mapDiv = document.getElementById('map');
+    while (mapDiv.firstChild) {
+      mapDiv.removeChild(mapDiv.firstChild);
+    }
+    
     const mapData = this.state.info.player1.mapData;
     mapData.width = window.innerWidth;
     mapData.height = window.innerWidth * 70/100;
@@ -109,7 +121,7 @@ class Show extends React.Component{
               {info[players[index]].death &&
                 `Killed by ${info[players[index]].death.killer.name}.`}
             </div>)}
-          <div id='map' onLoad={(e)=> this.showMap(e)} />
+          <div id='map' />
           {/* <pre>{JSON.stringify(this.state, null, 2)}</pre> */}
 
         </div>}
