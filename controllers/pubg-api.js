@@ -365,7 +365,8 @@ function matchInfo(req, res) {
       matchData[player].data.reduce((locationData, data) => {
 
         const coords = data.character ? data.character.location :
-          data.attacker && data.attacker.name === username ?
+          data.attacker && data.attacker.name === username &&
+          data.attacker.location.x !== 0 ?
             data.attacker.location :
             data.killer && data.killer.name === username ?
               data.killer.location :
@@ -376,7 +377,7 @@ function matchInfo(req, res) {
           coords: coords,
           time: data._D
         };
-        locationData.push(location);
+        if(location.coords) locationData.push(location);
         return locationData;
       }, []);
 

@@ -36,7 +36,8 @@ class Show extends React.Component{
   }
 
   showMap = () => {
-    mpld3.draw_figure('map', this.state.info.player1.mapData);
+    const mapData = this.state.info.player1.mapData;
+    mpld3.draw_figure('map', mapData);
     this.setState({ map: true });
   }
 
