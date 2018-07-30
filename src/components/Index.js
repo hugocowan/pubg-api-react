@@ -86,9 +86,9 @@ class Index extends React.Component{
           {this.state.matchList.message &&
             <p className='error'>{this.state.matchList.message}</p>}
 
-          <div className='blue stats'>
+          {this.state.matchList.playerSeason && <div className='blue stats'>
             <p>Solo-FPP – kills: {player['solo-fpp'].kills}</p>
-          </div>
+          </div>}
 
           {this.sortAndFilter().map(match => {
             const playDate = new Date(match.createdAt);
@@ -133,6 +133,23 @@ class Index extends React.Component{
 
                       Time played: {(info[players[0]].time/60).toFixed(2)} minutes.
                     </p>
+
+                    {info[players[0]].kills && players.map((player, index) =>
+                      <div key={index}>
+                        <p>{`${info[player].username}:`}
+                          <br />
+                          {info[players[index]].kills &&
+                            `Kills – ${info[players[index]].kills.length},`}
+                          <br />
+                          {info[players[index]].avgFPS &&
+                            <span>
+                              Average FPS – {parseInt(info[players[index]].avgFPS)}
+                              <br />
+                            </span>}
+                          {info[players[index]].death &&
+                            `Killed by ${info[players[index]].death.killer.name}.`}
+                        </p>
+                      </div>)}
                   </div>}
                 <div className='button'>
                   <Link

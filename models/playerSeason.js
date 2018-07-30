@@ -6,7 +6,9 @@ const playerSeasonSchema = new mongoose.Schema({
   duo: {},
   'duo-fpp': {},
   squad: {},
-  'squad-fpp': {}
+  'squad-fpp': {},
+  createdAt: { type: Date },
+  date: { type: String }
 });
 
 // playerSeason.query.byName = function(name) {

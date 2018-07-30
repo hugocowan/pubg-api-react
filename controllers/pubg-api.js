@@ -11,7 +11,7 @@ const maps = require('./maps');
 //Each match contains all matchInfo.
 
 function playerMatchList(req, res, next) {
-  console.log('Checking matchList DB...');
+  // console.log('Checking matchList DB...');
 
   let oldMatchList;
   let stillMore = true;
@@ -20,7 +20,7 @@ function playerMatchList(req, res, next) {
     .find()
     .byName(req.params.username)
     .populate({
-      path: 'matches, playerSeason',
+      path: 'matches playerSeason',
       populate: { path: 'info' }
     })
     .then(matchList => {
@@ -30,12 +30,15 @@ function playerMatchList(req, res, next) {
       } else {
 
         oldMatchList = matchList[0];
+
+        // console.log(matchList);
+
         const matchListDate = new Date(matchList[0].attributes.createdAt).getTime();
         const currentDate = new Date().getTime();
         const timer = (matchListDate + 60000 - currentDate)/1000;
         // const seasonTimer = (matchListDate + 300000 - currentDate)/1000;
 
-        if(timer){
+        if(timer <= 0){
           console.log('Timer\'s up. Getting new matchList...');
           getNewMatchList();
 
@@ -49,67 +52,45 @@ function playerMatchList(req, res, next) {
     })
     .catch(next);
 
-  function getPlayerSeason(matchList) {
-    console.log('Getting player season...');
-    return new Promise((resolve, reject) => {
-      if (typeof matchList.playerStats !== 'object') {
-        rp({
-          method: 'GET',
-          url: `https://api.playbattlegrounds.com/shards/pc-eu/players/${matchList.id}/seasons/division.bro.official.${matchList.date}`,
-          headers: {
-            Authorization: `Bearer ${process.env.PUBG_API_KEY}`,
-            Accept: 'application/vnd.api+json'
-          },
-          json: true
-        })
-          .then(playerSeason => {
-            PlayerSeason
-              .create(playerSeason.data.attributes.gameModeStats)
-              .then(playerSeason => {
-                console.log('Player season received.');
-                resolve(playerSeason);
-              })
-              .catch(next);
-          })
-          .catch(next);
-      } else reject(null);
-    });
-  }
-
   function createMatchList(matchListData, matches, newMatches, oldMatches) {
 
     if(stillMore && (newMatches.length + oldMatches.length === matches.length)){
-      console.log('All matches received. Sending matches.');
+      // console.log('All matches received. Sending matches.');
 
       stillMore = false;
 
       Match
         .create(newMatches)
         .then(() => {
-          return getPlayerSeason(matchListData);
+          return playerSeason(matchListData);
         })
         .then(playerSeason => {
-          // console.log(playerSeason);
           return MatchList
             .create(matchListData)
             .then(matchList => {
-              matchList.playerSeason = playerSeason;
-              Object.assign(matchList.matches, oldMatches, newMatches);
-              // console.log(matchList);
-
+              if (playerSeason) {
+                matchList.playerSeason = playerSeason;
+              }
+              // Object.assign(matchList.matches, oldMatches, newMatches);
+              if (oldMatches && oldMatches[0]) oldMatches.forEach(match => {
+                matchList.matches.push(match);
+              });
+              if (newMatches && newMatches[0]) newMatches.forEach(match => {
+                matchList.matches.push(match);
+              });
               return matchList.save();
             });
         })
-        .then(matchListData => {
-          // console.log(matchListData);
-          showNewMatchList(matchListData);
+        .then(matchData => {
+          // console.log('match data here: ', matchData);
+          showNewMatchList(matchData);
         })
         .catch(next);
     }
   }
 
   function showOldMatchList(oldMatchList) {
-    console.log('MatchList sent.');
+    // console.log('MatchList sent.');
 
     new Promise((resolve, reject) => {
       if(!oldMatchList) reject('Too many requests.');
@@ -119,13 +100,14 @@ function playerMatchList(req, res, next) {
   }
 
   function showNewMatchList(matchListData) {
-    console.log('MatchList sent.', matchListData);
+    // console.log('MatchList sent.');
     if(oldMatchList) oldMatchList.remove();
     MatchList
       .create(matchListData)
       .then(matchList => res.json(matchList))
       .catch(next);
   }
+
 
   function getNewMatchList() {
 
@@ -139,7 +121,7 @@ function playerMatchList(req, res, next) {
       json: true
     })
       .then(matchList => {
-        console.log('MatchList received. Getting matches...');
+        // console.log('MatchList received. Getting matches...');
 
         const matchListData = matchList.data[0];
         const matchListTime = matchListData.attributes.createdAt.split('-');
@@ -217,11 +199,74 @@ function playerMatchList(req, res, next) {
         } else res.json({message: next.message || next});
       });
   }
+
+
+  function playerSeason(matchList) {
+    console.log('Checking playerSeason DB...');
+
+    return PlayerSeason
+      .find({ date: matchList.date })
+      .then(seasonData => {
+        // console.log(matchList.date);
+        if(!seasonData[0]) {
+          console.log('No old playerSeason available. Getting new playerSeason...');
+          return getNewPlayerSeason(matchList);
+        } else {
+
+          const seasonDate = new Date(seasonData[0].createdAt).getTime();
+          const currentDate = new Date().getTime();
+          const timer = (seasonDate + 300000 - currentDate)/1000;
+
+          if(timer <= 0){
+            console.log('Timer\'s up. Getting new seasonData...');
+            seasonData[0].remove();
+            return getNewPlayerSeason(matchList);
+
+          } else {
+            console.log(`${timer} seconds remaining. Showing old playerSeason...`);
+            return seasonData[0];
+          }
+
+        }
+      });
+
+
+    function getNewPlayerSeason(matchList) {
+      return new Promise(resolve => {
+
+        rp({
+          method: 'GET',
+          url: `https://api.playbattlegrounds.com/shards/pc-eu/players/${matchList.id}/seasons/division.bro.official.${matchList.date}`,
+          headers: {
+            Authorization: `Bearer ${process.env.PUBG_API_KEY}`,
+            Accept: 'application/vnd.api+json'
+          },
+          json: true
+        })
+          .then(playerSeason => {
+            PlayerSeason
+              .create(playerSeason.data.attributes.gameModeStats)
+              .then(playerSeason => {
+                console.log('Player season received.');
+                playerSeason.createdAt = new Date();
+                playerSeason.date = matchList.date;
+                playerSeason.save();
+                resolve(playerSeason);
+              })
+              .catch(next);
+          })
+          .catch(next);
+      });
+    }
+  }
 }
 
 
+
+
+
 function matchInfo(req, res) {
-  console.log('Checking DB...');
+  // console.log('Checking DB...');
 
   async function asyncForEach(array, callback) {
     for (let index = 0; index < array.length; index++) {
@@ -234,12 +279,12 @@ function matchInfo(req, res) {
     .populate('info')
     .then(match => {
       if(!match) {
-        console.log('No match found in DB...');
+        // console.log('No match found in DB...');
         throw 'No match in DB.';
       }
 
       if(!match.info) {
-        console.log('No match info found in DB...');
+        // console.log('No match info found in DB...');
         throw 'No match data in DB.';
       }
       const matchInfo = match._doc.info._doc;
@@ -262,13 +307,13 @@ function matchInfo(req, res) {
     })
     .then(match => {
 
-      console.log('MatchInfo data sent from DB.');
+      // console.log('MatchInfo data sent from DB.');
       match.save();
       res.json(match);
     })
     .catch((next) => {
-      console.log('Requesting match data, ', next.message ||
-      next || 'no errors...');
+      // console.log('Requesting match data, ', next.message ||
+      // next || 'no errors...');
       if(next === 'No match data in DB.') {
         getMatchInfo();
       } else if(next === 'No match in DB.') {
@@ -283,7 +328,7 @@ function matchInfo(req, res) {
 
 
   function getMatchInfo() {
-    console.log('Getting matchData from PUBG API...');
+    // console.log('Getting matchData from PUBG API...');
     rp({
       method: 'GET',
       url: `${req.params[0]}`,
@@ -305,7 +350,7 @@ function matchInfo(req, res) {
 
   async function filterMatchInfo(matchInfo) {
 
-    console.log('Filtering new data...');
+    // console.log('Filtering new data...');
 
     const { username, matchId } = req.params;
     const playerNames = [username];
@@ -373,7 +418,7 @@ function matchInfo(req, res) {
     await asyncForEach(playerNames, async (username) =>
       await getValues(username, playerNames, matchData));
 
-    console.log('Filtered match info sent.');
+    // console.log('Filtered match info sent.');
 
     MatchInfo
       .create(matchData)
@@ -396,7 +441,7 @@ function matchInfo(req, res) {
     //The if statements make sure the property is only calculated once.
     //This avoids redoing properties and allows for new properties to be added.
     return new Promise((resolve) => {
-      console.log('Getting values from player data...');
+      // console.log('Getting values from player data...');
 
       let index = 0;
       const player = `player${playerNames.indexOf(username) + 1}`;
@@ -423,7 +468,7 @@ function matchInfo(req, res) {
 
 
       if(!matchData[player].mapData){
-        console.log('getting map data...');
+        // console.log('getting map data...');
         maps
           .getMap(matchData[player].coords)
           .then(data => {
