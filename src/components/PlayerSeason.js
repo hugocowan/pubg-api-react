@@ -1,34 +1,50 @@
 import React from 'react';
 
-const PlayerSeason = ({ seasonData }) => {
+const PlayerSeason = ({ seasonData, handleChange, gameModeFPP }) => {
 
-  const killDeathRatio = function(matchType) {
-    const kDR = seasonData[matchType].kills /
-    (seasonData[matchType].roundsPlayed - seasonData[matchType].wins);
+  const killDeathRatio = function(gameMode) {
+    const kDR = seasonData[gameMode].kills /
+    (seasonData[gameMode].roundsPlayed - seasonData[gameMode].wins);
     return kDR.toFixed(2);
   };
-  const killsDeathsAssists = function(matchType) {
-    const kDA = (seasonData[matchType].kills + seasonData[matchType].assists) /
-    (seasonData[matchType].roundsPlayed - seasonData[matchType].wins);
+  const killsDeathsAssists = function(gameMode) {
+    const kDA = (seasonData[gameMode].kills + seasonData[gameMode].assists) /
+    (seasonData[gameMode].roundsPlayed - seasonData[gameMode].wins);
     return kDA.toFixed(2);
   };
 
+
   return (
     <div className='blue stats'>
-      <div>
-        <h3>Solo-FPP</h3>
-        <p>
-          Kills: {seasonData['solo-fpp'].kills}<br />
-          Longest Kill: {seasonData['solo-fpp'].longestKill.toFixed(2)}m<br />
-          Headshot Kills: {seasonData['solo-fpp'].headshotKills}<br />
-          Max KillStreak: {seasonData['solo-fpp'].maxKillStreaks}<br />
-          Max KillStreak: {seasonData['solo-fpp'].maxKillStreaks}<br />
-          Games Played: {seasonData['solo-fpp'].roundsPlayed}<br />
-          KDR: {killDeathRatio('solo-fpp')}<br />
-          KDA: {killsDeathsAssists('solo-fpp')}<br />
-        </p>
+      <div className='button'>
+        <label htmlFor='gameMode'>GameMode</label>
+        <select onChange={() => handleChange()}>
+          <option>FPP</option>
+          <option>TPP</option>
+        </select>
       </div>
-      <div>
+      {Object
+        .keys(seasonData)
+        .filter(key => {
+          if(gameModeFPP) return key.includes('fpp');
+          return (typeof seasonData[key] === 'object' &&
+                  !key.includes('fpp'));
+        })
+        .map(gameMode =>
+          <div key={gameMode}>
+            <h3>{gameMode}</h3>
+            <p>
+              Kills: {seasonData[gameMode].kills}<br />
+              Longest Kill: {seasonData[gameMode].longestKill.toFixed(2)}m<br />
+              Headshot Kills: {seasonData[gameMode].headshotKills}<br />
+              Max KillStreak: {seasonData[gameMode].maxKillStreaks}<br />
+              Max KillStreak: {seasonData[gameMode].maxKillStreaks}<br />
+              Games Played: {seasonData[gameMode].roundsPlayed}<br />
+              KDR: {killDeathRatio(gameMode) || 0}<br />
+              KDA: {killsDeathsAssists(gameMode) || 0}<br />
+            </p>
+          </div>)}
+      {/* <div>
         <h3>Duo-FPP</h3>
         <p>
           Kills: {seasonData['duo-fpp'].kills}<br />
@@ -53,7 +69,7 @@ const PlayerSeason = ({ seasonData }) => {
           KDR: {killDeathRatio('squad-fpp')}<br />
           KDA: {killsDeathsAssists('squad-fpp')}<br />
         </p>
-      </div>
+      </div> */}
     </div>
   );
 };

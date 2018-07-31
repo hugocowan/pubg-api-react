@@ -198,6 +198,8 @@ function playerMatchList(req, res, next) {
       });
   }
 
+  //Make playerSeason stats available even when
+  //you have no matches.
 
   function playerSeason(matchList) {
     console.log('Checking playerSeason DB...');

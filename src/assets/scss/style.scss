@@ -5,7 +5,7 @@ body{
 
 .button{
   width: 100%;
-  a, button{
+  a, button, select{
     border: none;
     font-size: 16px;
     text-decoration: none;
@@ -30,6 +30,7 @@ p, .blue{
 .stats{
   width: 95%;
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-around;
   line-height: 20px;
 }

@@ -11,7 +11,8 @@ class Index extends React.Component{
   state = {
     sort: 'createdAt|desc',
     search: '',
-    username: this.props.match.params.username
+    username: this.props.match.params.username,
+    gameModeFPP: true
   };
 
   componentDidMount(){
@@ -64,13 +65,11 @@ class Index extends React.Component{
     return number+(suffix[(value-20)%10]||suffix[value]||suffix[0]);
   }
 
+  handleChange = () => {
+    this.setState({ gameModeFPP: !this.state.gameModeFPP });
+  }
+
   render(){
-
-    let player;
-
-    if (this.state.matchList) {
-      player = this.state.matchList.playerSeason;
-    }
 
     if(!this.state.matchList){
       return (
@@ -99,6 +98,8 @@ class Index extends React.Component{
 
           <PlayerSeason
             seasonData = {this.state.matchList.playerSeason}
+            handleChange = {this.handleChange}
+            gameModeFPP = {this.state.gameModeFPP}
           />}
 
           {this.sortAndFilter().map(match => {
