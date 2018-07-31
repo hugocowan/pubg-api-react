@@ -17,7 +17,7 @@ const PlayerSeason = ({ seasonData, handleChange, gameModeFPP }) => {
   return (
     <div className='blue stats'>
       <div className='button'>
-        <label htmlFor='gameMode'>GameMode</label>
+        <label htmlFor='gameMode'>GameMode: </label>
         <select onChange={() => handleChange()}>
           <option>FPP</option>
           <option>TPP</option>
@@ -44,32 +44,6 @@ const PlayerSeason = ({ seasonData, handleChange, gameModeFPP }) => {
               KDA: {killsDeathsAssists(gameMode) || 0}<br />
             </p>
           </div>)}
-      {/* <div>
-        <h3>Duo-FPP</h3>
-        <p>
-          Kills: {seasonData['duo-fpp'].kills}<br />
-          Longest Kill: {seasonData['duo-fpp'].longestKill.toFixed(2)}m<br />
-          Headshot Kills: {seasonData['duo-fpp'].headshotKills}<br />
-          Max KillStreak: {seasonData['duo-fpp'].maxKillStreaks}<br />
-          Max KillStreak: {seasonData['duo-fpp'].maxKillStreaks}<br />
-          Games Played: {seasonData['duo-fpp'].roundsPlayed}<br />
-          KDR: {killDeathRatio('duo-fpp')}<br />
-          KDA: {killsDeathsAssists('duo-fpp')}<br />
-        </p>
-      </div>
-      <div>
-        <h3>Squad-FPP</h3>
-        <p>
-          Kills: {seasonData['squad-fpp'].kills}<br />
-          Longest Kill: {seasonData['squad-fpp'].longestKill.toFixed(2)}m<br />
-          Headshot Kills: {seasonData['squad-fpp'].headshotKills}<br />
-          Max KillStreak: {seasonData['squad-fpp'].maxKillStreaks}<br />
-          Max KillStreak: {seasonData['squad-fpp'].maxKillStreaks}<br />
-          Games Played: {seasonData['squad-fpp'].roundsPlayed}<br />
-          KDR: {killDeathRatio('squad-fpp')}<br />
-          KDA: {killsDeathsAssists('squad-fpp')}<br />
-        </p>
-      </div> */}
     </div>
   );
 };

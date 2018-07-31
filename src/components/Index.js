@@ -6,6 +6,7 @@ import _ from 'lodash';
 
 import Navbar from './Navbar';
 import PlayerSeason from './PlayerSeason';
+import ErrorHandler from './ErrorHandler';
 
 class Index extends React.Component{
   state = {
@@ -79,7 +80,7 @@ class Index extends React.Component{
             url='/'
           />
           <div className='index'>
-            <p>Loading... Hey. How are you doing. {'I\'m'} alright. If this takes a while, the username you typed may be incorrect.</p>
+            <div className='blue'>Loading... Hey. How are you doing. {'I\'m'} alright. If this takes a while, the username you typed may be incorrect.</div>
           </div>
         </div>
       );
@@ -92,10 +93,11 @@ class Index extends React.Component{
         />
         <div className='index'>
           {this.state.matchList.message &&
-            <p className='error'>{this.state.matchList.message}</p>}
+            <ErrorHandler
+              message = {this.state.matchList.message}
+            />}
 
           {this.state.matchList.playerSeason &&
-
           <PlayerSeason
             seasonData = {this.state.matchList.playerSeason}
             handleChange = {this.handleChange}
