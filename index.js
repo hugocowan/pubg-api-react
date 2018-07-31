@@ -8,7 +8,7 @@ const errorHandler = require('./lib/errorHandler');
 
 const mongoose = require('mongoose');
 mongoose.Promise = require('bluebird');
-mongoose.connect(dbURI);
+mongoose.connect(dbURI, { useNewUrlParser: true });
 
 app.use(express.static(`${__dirname}/public`));
 app.use(bodyParser.json());

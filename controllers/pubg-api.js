@@ -1,24 +1,20 @@
 const rp = require('request-promise');
 const MatchList = require('../models/matchList');
-const MatchInfo = require('../models/matchInfo');
 const PlayerSeason = require('../models/playerSeason');
 const Match = require('../models/match');
-const maps = require('./maps');
+const MatchInfo = require('../models/matchInfo'); // eslint-disable-line
 
-//I want to make a matchList containing all match info.
-//The matchList's ID is based off of the year/month.
-//The matchList contains all matches.
-//Each match contains all matchInfo.
 
 function playerMatchList(req, res, next) {
   // console.log('Checking matchList DB...');
 
   let oldMatchList;
   let stillMore = true;
+  const { username } = req.params;
 
   MatchList
     .find()
-    .byName(req.params.username)
+    .byName(username)
     .populate({
       path: 'matches playerSeason',
       populate: { path: 'info' }
@@ -61,23 +57,24 @@ function playerMatchList(req, res, next) {
 
       Match
         .create(newMatches)
-        .then(() => {
-          return playerSeason(matchListData);
-        })
-        .then(playerSeason => {
+        .then((newMatches) => {
+          const newMatchData = newMatches;
+          const playerSeasonData = playerSeason(matchListData);
           return MatchList
             .create(matchListData)
-            .then(matchList => {
+            .then(async matchList => {
               if (playerSeason) {
-                matchList.playerSeason = playerSeason;
+                matchList.playerSeason = await playerSeasonData;
               }
               // Object.assign(matchList.matches, oldMatches, newMatches);
               if (oldMatches && oldMatches[0]) oldMatches.forEach(match => {
                 matchList.matches.push(match);
               });
-              if (newMatches && newMatches[0]) newMatches.forEach(match => {
+              if (newMatchData && newMatchData[0]) newMatchData.forEach(match => {
+                // console.log('newMatchData: ', newMatchData);
                 matchList.matches.push(match);
               });
+              // console.log('matchList: ', matchList);
               return matchList.save();
             });
         })
@@ -113,7 +110,7 @@ function playerMatchList(req, res, next) {
 
     rp({
       method: 'GET',
-      url: `https://api.playbattlegrounds.com/shards/pc-eu/players?filter[playerNames]=${req.params.username}`,
+      url: `https://api.playbattlegrounds.com/shards/pc-eu/players?filter[playerNames]=${username}`,
       headers: {
         Authorization: `Bearer ${process.env.PUBG_API_KEY}`,
         Accept: 'application/vnd.api+json'
@@ -194,7 +191,8 @@ function playerMatchList(req, res, next) {
       .catch(next => {
         console.log('error message: ', next.message || next);
         if(next.message === '429 - undefined' ||
-           next.message === 'Error: getaddrinfo ENOTFOUND api.playbattlegrounds.com api.playbattlegrounds.com:443'){
+           next.message === 'Error: getaddrinfo ENOTFOUND api.playbattlegrounds.com api.playbattlegrounds.com:443' ||
+           next.message === 'Error: read ETIMEDOUT'){
           return showOldMatchList(oldMatchList);
         } else res.json({message: next.message || next});
       });
@@ -205,7 +203,7 @@ function playerMatchList(req, res, next) {
     console.log('Checking playerSeason DB...');
 
     return PlayerSeason
-      .find({ date: matchList.date })
+      .find({ date: matchList.date, username })
       .then(seasonData => {
         // console.log(matchList.date);
         if(!seasonData[0]) {
@@ -250,6 +248,7 @@ function playerMatchList(req, res, next) {
                 console.log('Player season received.');
                 playerSeason.createdAt = new Date();
                 playerSeason.date = matchList.date;
+                playerSeason.username = username;
                 playerSeason.save();
                 resolve(playerSeason);
               })
@@ -261,263 +260,14 @@ function playerMatchList(req, res, next) {
   }
 }
 
-
-
-
-
 function matchInfo(req, res) {
-  // console.log('Checking DB...');
+  const { fork } = require('child_process');
+  const matchData = fork('controllers/matchInfos.js');
+  matchData.on('message', (matchInfo) => {
+    res.json(matchInfo);
+  });
 
-  async function asyncForEach(array, callback) {
-    for (let index = 0; index < array.length; index++) {
-      await callback(array[index], index, array);
-    }
-  }
-
-  Match
-    .findOne({ 'id': req.params.matchId })
-    .populate('info')
-    .then(match => {
-      if(!match) {
-        // console.log('No match found in DB...');
-        throw 'No match in DB.';
-      }
-
-      if(!match.info) {
-        // console.log('No match info found in DB...');
-        throw 'No match data in DB.';
-      }
-      const matchInfo = match._doc.info._doc;
-
-      const playerCount = Object.keys(matchInfo)
-        .filter(key => matchInfo[key].username)
-        .map(playerName => playerName);
-
-      const playerNames = playerCount.map((player, index) =>
-        matchInfo[`player${index+1}`].username);
-
-      const playerValues = playerNames.map(username => {
-        return getValues(username, playerNames, matchInfo);
-      });
-
-      Object.assign(match.info, ...playerValues);
-
-      return match;
-
-    })
-    .then(match => {
-
-      // console.log('MatchInfo data sent from DB.');
-      match.save();
-      res.json(match);
-    })
-    .catch((next) => {
-      // console.log('Requesting match data, ', next.message ||
-      // next || 'no errors...');
-      if(next === 'No match data in DB.') {
-        getMatchInfo();
-      } else if(next === 'No match in DB.') {
-        res.json({
-          message: 'No match found in the database! Try going back to the homepage.',
-          button: 'Home',
-          url: '/'
-        });
-      } else next;
-    });
-
-
-
-  function getMatchInfo() {
-    // console.log('Getting matchData from PUBG API...');
-    rp({
-      method: 'GET',
-      url: `${req.params[0]}`,
-      headers: {
-        Accept: 'application/vnd.api+json'
-      },
-      json: true
-    })
-      .then(matchInfo => filterMatchInfo(matchInfo))
-      .catch(next => {
-        console.log('getting matchData failed, ', next.message || next);
-        if(next.message === 'Error: getaddrinfo ENOTFOUND telemetry-cdn.playbattlegrounds.com telemetry-cdn.playbattlegrounds.com:443'){
-          res.json({ message: 'Couldn\'t connect to PUBG\'s servers. Check your internet connection?' });
-        }
-      });
-  }
-
-
-
-  async function filterMatchInfo(matchInfo) {
-
-    // console.log('Filtering new data...');
-
-    const { username, matchId } = req.params;
-    const playerNames = [username];
-    const matchData = {};
-    const teams = [];
-    const id = matchInfo[0].MatchId.split('.');
-
-
-    matchInfo.forEach(data => {
-      if(data.character && !teams.includes(data.character.teamId))
-        teams.push(data.character.teamId);
-    });
-
-    matchData.attributes = {
-      matchId: id[id.length-1],
-      ping: matchInfo[0].PingQuality,
-      date: matchInfo[0]._D,
-      teams: teams.length
-    };
-
-    matchData.player1 = {};
-
-    matchData.player1.data = matchInfo.filter(data =>
-      (data.character && data.character.name === username) ||
-      (data.attacker && data.attacker.name === username) ||
-      (data.killer && data.killer.name === username) ||
-      (data.victim && data.victim.name === username));
-
-    // await getValues(username, playerNames, matchData);
-
-    const teamData = matchInfo.filter(data => {
-      // console.log('player 1\'s teamId: ', matchData.player1.data);
-
-      (data.character && data.character.name !== username &&
-        data.character.teamId === matchData.player1.data[0].character.teamId) ||
-        (data.attacker && data.attacker.name !== username &&
-          data.attacker.teamId === matchData.player1.data[0].character.teamId) ||
-          (data.killer && data.killer.name !== username &&
-            data.killer.teamId === matchData.player1.data[0].character.teamId) ||
-            (data.victim && data.victim.name !== username &&
-              data.victim.teamId === matchData.player1.data[0].character.teamId);
-
-    });
-
-
-    teamData.forEach((data) => {
-      let username;
-
-      data.character && !playerNames.includes(data.character.name) ?
-        (username = data.character.name, playerNames.push(username)) :
-        data.attacker && playerNames.includes(data.attacker.name) ?
-          username = data.attacker.name :
-          data.killer && playerNames.includes(data.killer.name) ?
-            username = data.killer.name :
-            data.victim && playerNames.includes(data.victim.name) ?
-              username = data.victim.name : username = data.character.name;
-
-      const player = `player${playerNames.indexOf(username) + 1}`;
-
-      matchData[player] = matchData[player] || {};
-      matchData[player].data = matchData[player].data || [];
-      matchData[player].data.push(data);
-    });
-
-    await asyncForEach(playerNames, async (username) =>
-      await getValues(username, playerNames, matchData));
-
-    // console.log('Filtered match info sent.');
-
-    MatchInfo
-      .create(matchData)
-      .then(matchData => {
-        Match
-          .findOne({ 'id': matchId })
-          .then(match => {
-            match.info = matchData;
-            match.save();
-            res.json(match);
-          });
-      });
-  }
-
-
-
-  async function getValues(username, playerNames, matchData) {
-
-    //To add a new property, add it in the schema too as an object.
-    //The if statements make sure the property is only calculated once.
-    //This avoids redoing properties and allows for new properties to be added.
-    return new Promise((resolve) => {
-      // console.log('Getting values from player data...');
-
-      let index = 0;
-      const player = `player${playerNames.indexOf(username) + 1}`;
-
-      if (!matchData[player].coords) matchData[player].coords =
-      matchData[player].data.reduce((locationData, data) => {
-
-        const coords = data.character ? data.character.location :
-          data.attacker && data.attacker.name === username &&
-          data.attacker.location.x !== 0 ?
-            data.attacker.location :
-            data.killer && data.killer.name === username ?
-              data.killer.location :
-              data.victim && data.victim.name === username ?
-                data.victim.location : null;
-
-        const location = {
-          coords: coords,
-          time: data._D
-        };
-        if(location.coords) locationData.push(location);
-        return locationData;
-      }, []);
-
-
-      if(!matchData[player].mapData){
-        // console.log('getting map data...');
-        maps
-          .getMap(matchData[player].coords)
-          .then(data => {
-            matchData[player].mapData = data;
-            console.log('Data values created.');
-            resolve(matchData);
-          })
-          .catch(err => console.log('error in map generation: ', err));
-      }
-
-
-      if (!matchData[player].death) matchData[player].death =
-      matchData[player].data.reduce((deathData, data) => {
-        if(data.killer &&
-          data.victim.name === username &&
-          data._T === 'LogPlayerKill'){
-          deathData = data;
-        }
-        return deathData;
-      }, {});
-
-      if (!matchData[player].kills) matchData[player].kills =
-        matchData[player].data.reduce((killData, data) => {
-          if(data.killer &&
-            data.killer.name === username &&
-            data._T === 'LogPlayerKill'){
-            killData.push(data);
-          }
-          return killData;
-        }, []);
-
-      if (!matchData[player].avgFPS) matchData[player].avgFPS =
-          matchData[player].data.reduce((total, data) => {
-            if(data.maxFPS) {
-              index += 1;
-              return total + data.maxFPS;
-            } else return total;
-          }, 0)/index;
-
-
-      if (!matchData[player].time) matchData[player].data.forEach(data => {
-        if(data.elapsedTime) matchData[player].time = data.elapsedTime;
-      });
-
-      if (!matchData[player].username) matchData[player].username = username;
-
-    });
-  }
-
+  matchData.send(req.params);
 }
 
 module.exports = {

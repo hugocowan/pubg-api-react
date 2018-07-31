@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import _ from 'lodash';
 
 import Navbar from './Navbar';
+import PlayerSeason from './PlayerSeason';
 
 class Index extends React.Component{
   state = {
@@ -24,6 +25,14 @@ class Index extends React.Component{
           this.state.matchList.matches.forEach((match, index) => {
             if (!match.info || typeof match.info === 'string') {
               // console.log(match);
+
+              //Only the first 10 or 20 matches should be retrieved,
+              //the others paginated or behind a never-ending scroll.
+              //Otherwise, if someone has hundreds of matches, the server will
+              //effectively hang for all other clients while it fetches the matchInfo.
+
+              //Or spawn a child process to deal with each response, leaving the
+              //main thread free to handle other requests...?
               axios
                 .get(`/api/telemetry/${this.state.username}/${match.id}/${match.telemetryURL}`)
                 .then(res => {
@@ -86,9 +95,11 @@ class Index extends React.Component{
           {this.state.matchList.message &&
             <p className='error'>{this.state.matchList.message}</p>}
 
-          {this.state.matchList.playerSeason && <div className='blue stats'>
-            <p>Solo-FPP – kills: {player['solo-fpp'].kills}</p>
-          </div>}
+          {this.state.matchList.playerSeason &&
+
+          <PlayerSeason
+            seasonData = {this.state.matchList.playerSeason}
+          />}
 
           {this.sortAndFilter().map(match => {
             const playDate = new Date(match.createdAt);

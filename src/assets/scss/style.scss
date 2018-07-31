@@ -29,6 +29,9 @@ p, .blue{
 
 .stats{
   width: 95%;
+  display: flex;
+  justify-content: space-around;
+  line-height: 20px;
 }
 
 .error{

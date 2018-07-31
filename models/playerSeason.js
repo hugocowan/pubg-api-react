@@ -8,7 +8,8 @@ const playerSeasonSchema = new mongoose.Schema({
   squad: {},
   'squad-fpp': {},
   createdAt: { type: Date },
-  date: { type: String }
+  date: { type: String },
+  username: { type: String }
 });
 
 // playerSeason.query.byName = function(name) {
