@@ -23,9 +23,7 @@ class Show extends React.Component{
     // console.log(telemetryURL);
     const { username, id } = this.props.match.params;
     axios
-      .get(`/api/telemetry/${username}/${id}/${telemetryURL}`, {
-        cancelToken: source.token
-      })
+      .get(`/api/telemetry/${username}/${id}/${telemetryURL}`)
       .then(res => {
         this.setState(res.data, () => {
           console.log(this.state);
@@ -40,7 +38,6 @@ class Show extends React.Component{
 
   componentWillUnmount() {
     window.removeEventListener('resize', this.showMap);
-    source.cancel('Request cancelled by user.');
   }
 
   showMap = () => {
