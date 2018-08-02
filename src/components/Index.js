@@ -21,9 +21,7 @@ class Index extends React.Component{
 
   componentDidMount(){
     axios
-      .get(`/api/${this.state.username}`, {
-        cancelToken: source.token
-      })
+      .get(`/api/${this.state.username}`)
       .then(res => this.setState({ matchList: res.data }, () => {
         console.log(this.state);
         if (!Object.keys(this.state.matchList).includes('message')) {
