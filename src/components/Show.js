@@ -49,7 +49,7 @@ class Show extends React.Component{
       mapDiv.removeChild(mapDiv.firstChild);
     }
 
-    if(this.state.info.player1.mapData) {
+    if(this.state.info) {
       const mapData = this.state.info.player1.mapData;
       mapData.width = window.innerWidth;
       mapData.height = window.innerWidth * 70/100;
