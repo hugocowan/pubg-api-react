@@ -32,7 +32,10 @@ class Show extends React.Component{
           this.showMap();
         });
       })
-      .catch(err => console.log('Request for mapData cancelled.', err.message || err));
+      .catch(err => {
+        console.log(`Request for mapData cancelled, ${err.message || err}`);
+        // this.setState({message: `Request for mapData cancelled, ${err.message || err}`});
+      });
   }
 
   componentWillUnmount() {
@@ -46,11 +49,13 @@ class Show extends React.Component{
       mapDiv.removeChild(mapDiv.firstChild);
     }
 
-    const mapData = this.state.info.player1.mapData;
-    mapData.width = window.innerWidth;
-    mapData.height = window.innerWidth * 70/100;
-    mpld3.draw_figure('map', mapData);
-    this.setState({ map: true });
+    if(this.state.info.player1.mapData) {
+      const mapData = this.state.info.player1.mapData;
+      mapData.width = window.innerWidth;
+      mapData.height = window.innerWidth * 70/100;
+      mpld3.draw_figure('map', mapData);
+      this.setState({ map: true });
+    }
   }
 
   render(){
