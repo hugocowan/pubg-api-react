@@ -4,8 +4,7 @@ import axios from 'axios';
 
 import Navbar from './Navbar';
 
-const CancelToken = axios.CancelToken;
-const source = CancelToken.source();
+
 import ErrorHandler from './ErrorHandler';
 
 
@@ -16,6 +15,8 @@ class Show extends React.Component{
     url: `/matches/${this.props.match.params.username}`
   };
 
+  _source = axios.CancelToken.source();
+
   componentDidMount() {
     window.addEventListener('resize', this.showMap);
 
@@ -25,7 +26,9 @@ class Show extends React.Component{
     // console.log(telemetryURL);
     const { username, id } = this.props.match.params;
     axios
-      .get(`/api/telemetry/${username}/${id}/${telemetryURL}`)
+      .get(`/api/telemetry/${username}/${id}/${telemetryURL}`, {
+        cancelToken: this._source.token
+      })
       .then(res => {
         this.setState(res.data, () => {
           console.log(this.state);
@@ -40,6 +43,7 @@ class Show extends React.Component{
 
   componentWillUnmount() {
     window.removeEventListener('resize', this.showMap);
+    this._source.cancel('Request cancelled by user.');
   }
 
   showMap = () => {
@@ -72,8 +76,8 @@ class Show extends React.Component{
           <ErrorHandler
             message = {this.state.matchList.message}
           />}
+          <div id='map' />
         </div>
-        <div id='map' />
       </div>
     );
   }

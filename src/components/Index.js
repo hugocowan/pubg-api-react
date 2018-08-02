@@ -7,9 +7,7 @@ import _ from 'lodash';
 import Navbar from './Navbar';
 import PlayerSeason from './PlayerSeason';
 import ErrorHandler from './ErrorHandler';
-
-const CancelToken = axios.CancelToken;
-const source = CancelToken.source();
+// let matchListReceived = false;
 
 class Index extends React.Component{
   state = {
@@ -19,9 +17,16 @@ class Index extends React.Component{
     gameModeFPP: true
   };
 
+  _source = axios.CancelToken.source();
+
   componentDidMount(){
+    // const CancelToken = axios.CancelToken;
+    // const source = CancelToken.source();
+    console.log('componentDidMount fired.');
     axios
-      .get(`/api/${this.state.username}`)
+      .get(`/api/${this.state.username}`, {
+        cancelToken: this._source.token
+      })
       .then(res => this.setState({ matchList: res.data }, () => {
         console.log(this.state);
         if (!Object.keys(this.state.matchList).includes('message')) {
@@ -29,6 +34,7 @@ class Index extends React.Component{
           const matches = [ ...matchList.matches ];
           this.state.matchList.matches.forEach((match, index) => {
             if (!match.info || typeof match.info === 'string') {
+              // this.setState({ matchDataRequested: true });
               // console.log(match);
 
               //Only the first 10 or 20 matches should be retrieved,
@@ -40,7 +46,7 @@ class Index extends React.Component{
               //main thread free to handle other requests...?
               axios
                 .get(`/api/telemetry/${this.state.username}/${match.id}/${match.telemetryURL}`, {
-                  cancelToken: source.token
+                  cancelToken: this._source.token
                 })
                 .then(res => {
                   matches[index] = res.data;
@@ -57,7 +63,13 @@ class Index extends React.Component{
   }
 
   componentWillUnmount(){
-    source.cancel('Request cancelled by user.');
+    // const CancelToken = axios.CancelToken;
+    // const source = CancelToken.source();
+    console.log('componentWillUnmount fired');
+    this._source.cancel('Request cancelled by user.');
+    // if(matchListReceived) {
+    //   console.log('matchListReceived: ', matchListReceived);
+    // }
   }
 
   sortAndFilter = () => {
