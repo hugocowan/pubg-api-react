@@ -6,6 +6,8 @@ import Navbar from './Navbar';
 
 const CancelToken = axios.CancelToken;
 const source = CancelToken.source();
+import ErrorHandler from './ErrorHandler';
+
 
 class Show extends React.Component{
   state = {
@@ -63,10 +65,14 @@ class Show extends React.Component{
           button={this.state.button}
           url={this.state.url}
         />
-        {!this.state.info && !this.state.message &&
-         <p>Loading... (this could take a while!)</p>}
-        {this.state.message &&
-        <p className='error'>{this.state.message}</p>}
+        <div className='show'>
+          {!this.state.info && !this.state.message &&
+           <div className='blue show'>Loading... (this could take a while!)</div>}
+          {this.state.message &&
+          <ErrorHandler
+            message = {this.state.matchList.message}
+          />}
+        </div>
         <div id='map' />
       </div>
     );
