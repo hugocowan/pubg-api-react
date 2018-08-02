@@ -8,6 +8,9 @@ import Navbar from './Navbar';
 import PlayerSeason from './PlayerSeason';
 import ErrorHandler from './ErrorHandler';
 
+const CancelToken = axios.CancelToken;
+const source = CancelToken.source();
+
 class Index extends React.Component{
   state = {
     sort: 'createdAt|desc',
@@ -18,7 +21,9 @@ class Index extends React.Component{
 
   componentDidMount(){
     axios
-      .get(`/api/${this.state.username}`)
+      .get(`/api/${this.state.username}`, {
+        cancelToken: source.token
+      })
       .then(res => this.setState({ matchList: res.data }, () => {
         console.log(this.state);
         if (!Object.keys(this.state.matchList).includes('message')) {
@@ -36,17 +41,25 @@ class Index extends React.Component{
               //Or spawn a child process to deal with each response, leaving the
               //main thread free to handle other requests...?
               axios
-                .get(`/api/telemetry/${this.state.username}/${match.id}/${match.telemetryURL}`)
+                .get(`/api/telemetry/${this.state.username}/${match.id}/${match.telemetryURL}`, {
+                  cancelToken: source.token
+                })
                 .then(res => {
                   matches[index] = res.data;
                   this.setState({ ...this.state, matchList: { ...matchList, matches } }, () => {
                     // console.log(this.state);
                   });
-                });
+                })
+                .catch(err => console.log('Request for match data cancelled.', err.message || err));
             }
           });
         }
-      }));
+      }))
+      .catch(err => console.log('Request for match list cancelled.', err.message || err));
+  }
+
+  componentWillUnmount(){
+    source.cancel('Request cancelled by user.');
   }
 
   sortAndFilter = () => {
@@ -116,55 +129,57 @@ class Index extends React.Component{
 
             return (
               <div key={match.id} className='matches'>
-                <p>Game Mode: {match.gameMode}</p>
-                <p>Map: {match.mapName}</p>
-                <p>Server: {match.shardId}</p>
-                <p>Duration: {(match.duration / 60).toFixed(2)} minutes</p>
-                <p>
-                  Played {moment(playDate).fromNow()}, on {playDate.toLocaleString()}.
-                </p>
+                <div>
+                  <p>Game Mode: {match.gameMode}</p>
+                  <p>Map: {match.mapName}</p>
+                  <p>Server: {match.shardId}</p>
+                  <p>Duration: {(match.duration / 60).toFixed(2)} minutes</p>
+                  <p>Played {moment(playDate).fromNow()}, on {playDate.toLocaleString()}.</p>
+                </div>
                 {typeof info === 'object' &&
-                  <div>
-                    <p>
-                      Team: {players.map((player, index) =>
-                        players.length !== index + 1 ?
-                          `${info[player].username}, ` :
-                          `${info[player].username}.`)}
-                      <br />
+                  <div className='info'>
+                    <div>
+                      <p>
+                        Team: {players.map((player, index) =>
+                          players.length !== index + 1 ?
+                            `${info[player].username}, ` :
+                            `${info[player].username}.`)}
+                        <br />
 
-                      {player1End.character ?
-                        `Ranking: ${this.getOrdinal(player1End.character.ranking)} /
-                        ${info.attributes.teams}.` :
-                        player1End.victim &&
-                        player1End.victim.name === info.player1.username ?
-                          `Ranking: ${this.getOrdinal(player1End.victim.ranking)} /
+                        {player1End.character ?
+                          `Ranking: ${this.getOrdinal(player1End.character.ranking)} /
                           ${info.attributes.teams}.` :
-                          `Ranking: ${this.getOrdinal(player1End.killer.ranking)} /
-                          ${info.attributes.teams}.`}
+                          player1End.victim &&
+                          player1End.victim.name === info.player1.username ?
+                            `Ranking: ${this.getOrdinal(player1End.victim.ranking)} /
+                            ${info.attributes.teams}.` :
+                            `Ranking: ${this.getOrdinal(player1End.killer.ranking)} /
+                            ${info.attributes.teams}.`}
 
+                        <br />
 
-                      <br />
-
-                      Time played: {(info[players[0]].time/60).toFixed(2)} minutes.
-                    </p>
+                        Time played: {(info[players[0]].time/60).toFixed(2)} minutes.
+                      </p>
+                    </div>
 
                     {info[players[0]].kills && players.map((player, index) =>
                       <div key={index}>
                         <p>{`${info[player].username}:`}
                           <br />
                           {info[players[index]].kills &&
-                            `Kills – ${info[players[index]].kills.length},`}
+                          `Kills – ${info[players[index]].kills.length},`}
                           <br />
                           {info[players[index]].avgFPS &&
-                            <span>
-                              Average FPS – {parseInt(info[players[index]].avgFPS)}
-                              <br />
-                            </span>}
+                              <span>
+                                Average FPS – {parseInt(info[players[index]].avgFPS)}
+                                <br />
+                              </span>}
                           {info[players[index]].death &&
-                            `Killed by ${info[players[index]].death.killer.name}.`}
+                          `Killed by ${info[players[index]].death.killer.name}.`}
                         </p>
                       </div>)}
                   </div>}
+
                 <div className='button'>
                   <Link
                     to={{
@@ -173,7 +188,6 @@ class Index extends React.Component{
                         telemetryURL: match.telemetryURL
                       }
                     }}
-                    className='button'
                   >
                     Show More
                   </Link>

@@ -57,7 +57,7 @@ function playerMatchList(req, res, next) {
 
       Match
         .create(newMatches)
-        .then((newMatches) => {
+        .then(newMatches => {
           const newMatchData = newMatches;
           const playerSeasonData = playerSeason(matchListData);
           return MatchList
@@ -158,6 +158,7 @@ function playerMatchList(req, res, next) {
                 .then(match => {
                   const attrs = match.data.attributes;
                   const telemetryId = match.data.relationships.assets.data[0].id;
+                  const date = attrs.createdAt.split('-');
                   const maps = {
                     Erangel_Main: 'Erangel',
                     Desert_Main: 'Miramar',
@@ -172,6 +173,7 @@ function playerMatchList(req, res, next) {
                         id: match.data.id,
                         telemetryURL: asset.attributes.URL,
                         createdAt: attrs.createdAt,
+                        date: `${date[0]}-${date[1]}`,
                         duration: attrs.duration,
                         gameMode: attrs.gameMode,
                         mapName: maps[attrs.mapName],

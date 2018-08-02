@@ -16,12 +16,24 @@ const PlayerSeason = ({ seasonData, handleChange, gameModeFPP }) => {
 
   return (
     <div className='blue stats'>
-      <div className='button'>
+      <div>
         <label htmlFor='gameMode'>GameMode: </label>
-        <select onChange={() => handleChange()}>
-          <option>FPP</option>
-          <option>TPP</option>
-        </select>
+        <div className="radio">
+          <label>
+            <input type="radio"
+              checked={gameModeFPP}
+              onChange={handleChange} />
+              FPP
+          </label>
+        </div>
+        <div className="radio">
+          <label>
+            <input type="radio"
+              checked={!gameModeFPP}
+              onChange={handleChange} />
+              TPP
+          </label>
+        </div>
       </div>
       {Object
         .keys(seasonData)

@@ -88,7 +88,11 @@ process.on('message', (params) => {
       .catch(next => {
         console.log('getting matchData failed, ', next.message || next);
         if(next.message === 'Error: getaddrinfo ENOTFOUND telemetry-cdn.playbattlegrounds.com telemetry-cdn.playbattlegrounds.com:443'){
-          console.log('Couldn\'t connect to PUBG\'s servers. Check your internet connection?');
+          process.send({
+            message: 'Couldn\'t connect to PUBG\'s servers. Check your internet connection?',
+            button: 'Home',
+            url: '/'
+          });
         }
       });
   }

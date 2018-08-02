@@ -4,6 +4,7 @@ const matchSchema = new mongoose.Schema({
   id: { type: String },
   telemetryURL: { type: String },
   createdAt: { type: Date },
+  date: { type: String },
   duration: { type: Number },
   gameMode: { type: String },
   mapName: { type: String },

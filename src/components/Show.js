@@ -1,10 +1,11 @@
 /*global mpld3*/
-
 import React from 'react';
 import axios from 'axios';
-import moment from 'moment';
 
 import Navbar from './Navbar';
+
+const CancelToken = axios.CancelToken;
+const source = CancelToken.source();
 
 class Show extends React.Component{
   state = {
@@ -16,21 +17,27 @@ class Show extends React.Component{
   componentDidMount() {
     window.addEventListener('resize', this.showMap);
 
+    // console.log('hi there!');
+
     const { telemetryURL } = this.props.location.state;
     // console.log(telemetryURL);
     const { username, id } = this.props.match.params;
     axios
-      .get(`/api/telemetry/${username}/${id}/${telemetryURL}`)
+      .get(`/api/telemetry/${username}/${id}/${telemetryURL}`, {
+        cancelToken: source.token
+      })
       .then(res => {
         this.setState(res.data, () => {
           console.log(this.state);
           this.showMap();
         });
-      });
+      })
+      .catch(err => console.log('Request for mapData cancelled.', err.message || err));
   }
 
   componentWillUnmount() {
     window.removeEventListener('resize', this.showMap);
+    source.cancel('Request cancelled by user.');
   }
 
   showMap = () => {
