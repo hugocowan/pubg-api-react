@@ -7,18 +7,12 @@ function getPlayerSeasons(req, res, next) {
 
   const { username, playerId, oldDate } = req.params;
 
-  console.log('params: ', req.params);
+  if(oldDate) return getNewPlayerSeason(null, oldDate);
 
-  if(oldDate) {
-    console.log('hi!');
-    return getNewPlayerSeason(null, oldDate);
-  }
+  console.log('playerId: ', playerId, 'username: ', username);
 
   const currentDate = JSON.parse(JSON.stringify(new Date())).split('-');
   const date = `${currentDate[0]}-${currentDate[1]}`;
-
-  console.log('date: ', date, 'playerId: ', playerId, 'username: ', username);
-
 
   return PlayerSeason
     .find({ username })
@@ -30,6 +24,11 @@ function getPlayerSeasons(req, res, next) {
 
         const latestSeason = seasonData.filter(data => data.date === date)[0];
 
+        // if(!latestSeason && oldDate) {
+        //   console.log('Getting older season...');
+        //   return getNewPlayerSeason(null, oldDate);
+        // }
+
         if(!latestSeason) {
           console.log('Current playerSeason unavailable. Getting new playerSeason...');
           return getNewPlayerSeason(seasonData);
@@ -39,15 +38,18 @@ function getPlayerSeasons(req, res, next) {
           const currentDate = new Date().getTime();
           const timer = (seasonDate + 300000 - currentDate)/1000;
 
+          // if(oldDate && timer <= 0) {
+          //   console.log('Getting older season...');
+          //   return getNewPlayerSeason(null, oldDate);
+          // }
+
           if(timer <= 0) {
             console.log('Timer\'s up. Getting new seasonData...');
             latestSeason.remove();
             return getNewPlayerSeason(seasonData);
-
-          } else {
-            console.log(`${timer} seconds remaining. Showing old playerSeason...`);
-            res.json(seasonData);
           }
+          console.log(`${timer} seconds remaining. Showing old playerSeason...`);
+          res.json(seasonData);
         }
       }
     });
@@ -72,7 +74,6 @@ function getPlayerSeasons(req, res, next) {
         PlayerSeason
           .create(playerSeason.data.attributes.gameModeStats)
           .then(playerSeason => {
-            console.log('Player season received.');
             playerSeason.createdAt = new Date();
             playerSeason.date = oldDate || date;
             playerSeason.username = username;
@@ -82,6 +83,7 @@ function getPlayerSeasons(req, res, next) {
             PlayerSeason
               .find({ username })
               .then(playerSeasons => {
+                console.log('Player seasons sent.');
                 res.json(playerSeasons);
               });
           })

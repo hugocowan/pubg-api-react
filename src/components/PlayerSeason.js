@@ -39,7 +39,7 @@ const PlayerSeason = ({
               <option value={season.date} key={season.id}>
                 Season {season.date.split('-')[1]}
               </option>)}
-          <option value='new'>Get previous Season</option>
+          <option value='new'>Get previous season</option>
         </select>
       </div>
       <div>

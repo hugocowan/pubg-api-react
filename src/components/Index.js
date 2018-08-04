@@ -16,7 +16,8 @@ class Index extends React.Component{
     username: this.props.match.params.username,
     gameModeFPP: true,
     selectValue: '',
-    selectSeason: ''
+    selectSeason: '',
+    map: false
   };
 
   _source = axios.CancelToken.source();
@@ -180,6 +181,10 @@ class Index extends React.Component{
   }
 
   hideMap = () => {
+    const mapDiv = document.getElementById('map');
+    while (mapDiv.firstChild) {
+      mapDiv.removeChild(mapDiv.firstChild);
+    }
     this.setState({ map: false });
   }
 
@@ -213,11 +218,6 @@ class Index extends React.Component{
             hideMap={this.hideMap}
           />
           <div className='index'>
-            <div className='button'>
-              <a onClick={() => this.setState({ map: false })}>
-                Back to matches
-              </a>
-            </div>
             <div key={match.id} className='match'>
               <div>
                 <p>Game Mode: {match.gameMode}</p>
@@ -306,6 +306,7 @@ class Index extends React.Component{
             />}
 
           {!this.sortAndFilter()[0] && !this.state.matchList.message &&
+            this.state.playerSeason &&
           <div className='blue'>
             No matches in the database for this season.
           </div>}
