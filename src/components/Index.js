@@ -1,3 +1,4 @@
+/*global mpld3*/
 import React from 'react';
 import axios from 'axios';
 import moment from 'moment';
@@ -21,8 +22,10 @@ class Index extends React.Component{
   _source = axios.CancelToken.source();
 
   componentDidMount(){
-
     const { username } = this.state;
+
+    window.addEventListener('resize', this.showMap);
+
 
     axios
       .get(`/api/${username}`, {
@@ -83,6 +86,7 @@ class Index extends React.Component{
   }
 
   componentWillUnmount(){
+    window.removeEventListener('resize', this.showMap);
     this._source.cancel('Request cancelled by user.');
   }
 
@@ -158,9 +162,30 @@ class Index extends React.Component{
     }
   }
 
+  showMap = (match) => {
+    if(!match) match = this.state.mapMatch;
+    this.setState({ map: true, mapMatch: match }, () => {
+      const mapDiv = document.getElementById('map');
+      while (mapDiv.firstChild) {
+        mapDiv.removeChild(mapDiv.firstChild);
+      }
+
+      if(match.info) {
+        const mapData = match.info.player1.mapData;
+        mapData.width = window.innerWidth;
+        mapData.height = window.innerWidth * 70/100;
+        mpld3.draw_figure('map', mapData);
+      }
+    });
+  }
+
+  hideMap = () => {
+    this.setState({ map: false });
+  }
+
   render(){
 
-    if(!this.state.matchList){
+    if(!this.state.matchList) {
       return (
         <div>
           <Navbar
@@ -173,6 +198,90 @@ class Index extends React.Component{
         </div>
       );
     }
+
+    if(this.state.map) {
+      const match = this.state.mapMatch;
+      const playDate = new Date(match.createdAt);
+      const info = match.info;
+      const players = Object.keys(info).filter(key => info[key].username);
+      const player1End = info.player1.data[info.player1.data.length - 1];
+
+      return (
+        <div>
+          <Navbar
+            button='Back'
+            hideMap={this.hideMap}
+          />
+          <div className='index'>
+            <div className='button'>
+              <a onClick={() => this.setState({ map: false })}>
+                Back to matches
+              </a>
+            </div>
+            <div key={match.id} className='match'>
+              <div>
+                <p>Game Mode: {match.gameMode}</p>
+                <p>Map: {match.mapName}</p>
+                <p>Server: {match.shardId}</p>
+                <p>Duration: {(match.duration / 60).toFixed(2)} minutes</p>
+                <p>Played {moment(playDate).fromNow()}, on {playDate.toLocaleString()}.</p>
+              </div>
+              <div className='info'>
+                <div>
+                  <p>
+                    Team: {players.map((player, index) =>
+                      players.length !== index + 1 ?
+                        `${info[player].username}, ` :
+                        `${info[player].username}.`)}
+                    <br />
+
+                    {player1End.character ?
+                      `Ranking: ${this.getOrdinal(player1End.character.ranking)} /
+                      ${info.attributes.teams}.` :
+                      player1End.victim &&
+                      player1End.victim.name === info.player1.username ?
+                        `Ranking: ${this.getOrdinal(player1End.victim.ranking)} /
+                        ${info.attributes.teams}.` :
+                        `Ranking: ${this.getOrdinal(player1End.killer.ranking)} /
+                        ${info.attributes.teams}.`}
+
+                    <br />
+
+                    Time played: {(info[players[0]].time/60).toFixed(2)} minutes.
+                  </p>
+                </div>
+
+                {info[players[0]].kills && players.map((player, index) =>
+                  <div key={index}>
+                    <p>{`${info[player].username}:`}
+                      <br />
+                      {info[players[index]].kills &&
+                      `Kills – ${info[players[index]].kills.length},`}
+                      <br />
+                      {info[players[index]].avgFPS &&
+                        <span>
+                          Average FPS – {parseInt(info[players[index]].avgFPS)}
+                          <br />
+                        </span>}
+                    </p>
+                    {info[players[index]].death &&
+                      <div className='button'>
+                        <Link
+                          to = {`/matches/${info[players[index]].death.killer.name}`}
+                          target='_blank'
+                        >
+                          Killed by {info[players[index]].death.killer.name}
+                        </Link>
+                      </div>}
+                  </div>)}
+              </div>
+            </div>
+          </div>
+          <div id='map'></div>
+        </div>
+      );
+    }
+
     return(
       <div>
         <Navbar
@@ -208,8 +317,7 @@ class Index extends React.Component{
             let players, player1End;
             if (typeof info === 'object') {
               players = Object.keys(info).filter(key => info[key].username);
-              player1End =
-              info.player1.data[info.player1.data.length - 1];
+              player1End = info.player1.data[info.player1.data.length - 1];
             }
 
             return (
@@ -272,18 +380,13 @@ class Index extends React.Component{
                       </div>)}
                   </div>}
 
-                <div className='button'>
-                  <Link
-                    to={{
-                      pathname: `/matches/${this.state.username}/${match.id}`,
-                      state: {
-                        telemetryURL: match.telemetryURL
-                      }
-                    }}
+                {match.info && <div className='button'>
+                  <a
+                    onClick={() => this.showMap(match)}
                   >
                     Show Map
-                  </Link>
-                </div>
+                  </a>
+                </div>}
               </div>
             );
           })}

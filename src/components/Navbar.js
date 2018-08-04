@@ -1,14 +1,20 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-const Navbar = ({button, url}) => {
+const Navbar = ({ button, url, hideMap }) => {
   return(
     <nav>
       <div className='nav-content'>
         {button && <div className="button">
-          <Link to={url}>
+          {url && <Link to={url}>
             {button}
-          </Link>
+          </Link>}
+
+          {hideMap &&
+            <a onClick={() => hideMap()}>
+              {button}
+            </a>}
+
         </div>}
         <div className="title">
           <h1>PUBGistics</h1>

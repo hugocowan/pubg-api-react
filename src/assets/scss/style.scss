@@ -17,8 +17,20 @@ body{
     box-shadow: none;
     &:hover{
         background: #2F2F4F;
+        cursor: pointer;
     }
   }
+}
+
+.match{
+  background: #B0E2FF;
+  border-radius: 5px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  padding: 10px;
+  margin: 10px;
+  width: 100%;
 }
 
 .blue{
@@ -147,13 +159,7 @@ nav{
     margin: 10px 5px;
   }
   .matches{
-    background: #B0E2FF;
-    border-radius: 5px;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    padding: 10px;
-    margin: 10px;
+    @extend .match;
     width: 45%;
     div{
       display: flex;
