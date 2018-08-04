@@ -20,10 +20,8 @@ class Show extends React.Component{
   componentDidMount() {
     window.addEventListener('resize', this.showMap);
 
-    // console.log('hi there!');
 
     const { telemetryURL } = this.props.location.state;
-    // console.log(telemetryURL);
     const { username, id } = this.props.match.params;
     axios
       .get(`/api/telemetry/${username}/${id}/${telemetryURL}`, {
@@ -37,7 +35,6 @@ class Show extends React.Component{
       })
       .catch(err => {
         console.log(`Request for mapData cancelled, ${err.message || err}`);
-        // this.setState({message: `Request for mapData cancelled, ${err.message || err}`});
       });
   }
 

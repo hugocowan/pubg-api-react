@@ -37,14 +37,13 @@ process.on('message', (params) => {
       const matchInfo = match._doc.info._doc;
 
       const playerCount = Object.keys(matchInfo)
-        .filter(key => matchInfo[key].username)
-        .map(playerName => playerName);
+        .filter(key => matchInfo[key].username);
 
       const playerNames = playerCount.map((player, index) =>
         matchInfo[`player${index+1}`].username);
 
-      const playerValues = playerNames.map(username => {
-        return getValues(username, playerNames, matchInfo);
+      const playerValues = playerNames.map(playerName => {
+        return getValues(playerName, playerNames, matchInfo);
       });
 
       Object.assign(match.info, ...playerValues);
@@ -100,8 +99,6 @@ process.on('message', (params) => {
 
 
   async function filterMatchInfo(matchInfo) {
-
-    // console.log('Filtering new data...');
 
     const playerNames = [username];
     const matchData = {};
@@ -185,27 +182,31 @@ process.on('message', (params) => {
 
 
 
-  async function getValues(username, playerNames, matchData) {
+  async function getValues(playerName, playerNames, matchData) {
 
     //To add a new property, add it in the schema too as an object.
     //The if statements make sure the property is only calculated once.
     //This avoids redoing properties and allows for new properties to be added.
     return new Promise((resolve) => {
-      // console.log('Getting values from player data...');
+
 
       let index = 0;
-      const player = `player${playerNames.indexOf(username) + 1}`;
+      const player = `player${playerNames.indexOf(playerName) + 1}`;
 
-      if (!matchData[player].coords) matchData[player].coords =
+      if(player === 'player1' && playerName !== username)
+        playerName = username;
+
+      if (matchData[player].username !== playerName ||
+         !matchData[player].coords) matchData[player].coords =
       matchData[player].data.reduce((locationData, data) => {
 
         const coords = data.character ? data.character.location :
-          data.attacker && data.attacker.name === username &&
+          data.attacker && data.attacker.name === playerName &&
           data.attacker.location.x !== 0 ?
             data.attacker.location :
-            data.killer && data.killer.name === username ?
+            data.killer && data.killer.name === playerName ?
               data.killer.location :
-              data.victim && data.victim.name === username ?
+              data.victim && data.victim.name === playerName ?
                 data.victim.location : null;
 
         const location = {
@@ -217,41 +218,42 @@ process.on('message', (params) => {
       }, []);
 
 
-      if(!matchData[player].mapData){
-        // console.log('getting map data...');
+      if(matchData[player].username !== playerName ||
+        !matchData[player].mapData){
         maps
           .getMap(matchData[player].coords)
           .then(data => {
             matchData[player].mapData = data;
-            console.log('Data values created.');
-            // console.log(matchData);
             resolve(matchData);
           })
           .catch(err => console.log('error in map generation: ', err));
       }
 
 
-      if (!matchData[player].death) matchData[player].death =
+      if (matchData[player].username !== playerName ||
+         !matchData[player].death) matchData[player].death =
       matchData[player].data.reduce((deathData, data) => {
         if(data.killer &&
-          data.victim.name === username &&
+          data.victim.name === playerName &&
           data._T === 'LogPlayerKill'){
           deathData = data;
         }
         return deathData;
       }, {});
 
-      if (!matchData[player].kills) matchData[player].kills =
+      if (matchData[player].username !== playerName ||
+         !matchData[player].kills) matchData[player].kills =
         matchData[player].data.reduce((killData, data) => {
           if(data.killer &&
-            data.killer.name === username &&
+            data.killer.name === playerName &&
             data._T === 'LogPlayerKill'){
             killData.push(data);
           }
           return killData;
         }, []);
 
-      if (!matchData[player].avgFPS) matchData[player].avgFPS =
+      if (matchData[player].username !== playerName ||
+         !matchData[player].avgFPS) matchData[player].avgFPS =
           matchData[player].data.reduce((total, data) => {
             if(data.maxFPS) {
               index += 1;
@@ -260,11 +262,13 @@ process.on('message', (params) => {
           }, 0)/index;
 
 
-      if (!matchData[player].time) matchData[player].data.forEach(data => {
+      if (matchData[player].username !== playerName ||
+         !matchData[player].time) matchData[player].data.forEach(data => {
         if(data.elapsedTime) matchData[player].time = data.elapsedTime;
       });
 
-      if (!matchData[player].username) matchData[player].username = username;
+      if (matchData[player].username !== playerName ||
+         !matchData[player].username) matchData[player].username = username;
 
     });
   }

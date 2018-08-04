@@ -7,51 +7,58 @@ import _ from 'lodash';
 import Navbar from './Navbar';
 import PlayerSeason from './PlayerSeason';
 import ErrorHandler from './ErrorHandler';
-// let matchListReceived = false;
 
 class Index extends React.Component{
   state = {
     sort: 'createdAt|desc',
     search: '',
     username: this.props.match.params.username,
-    gameModeFPP: true
+    gameModeFPP: true,
+    selectValue: '',
+    selectSeason: ''
   };
 
   _source = axios.CancelToken.source();
 
   componentDidMount(){
-    // const CancelToken = axios.CancelToken;
-    // const source = CancelToken.source();
-    console.log('componentDidMount fired.');
+
+    const { username } = this.state;
+
     axios
-      .get(`/api/${this.state.username}`, {
+      .get(`/api/${username}`, {
         cancelToken: this._source.token
       })
       .then(res => this.setState({ matchList: res.data }, () => {
-        console.log(this.state);
+        console.log('matchList: ',this.state.matchList);
+
+        axios
+          .get(`/api/seasons/${username}/${this.state.matchList.id}`, {
+            cancelToken: this._source.token
+          })
+          .then(res => this.setState({ playerSeason: res.data }, () => {
+            console.log(this.state);
+          }))
+          .catch(err => console.log('Request for average season data cancelled.', err.message || err));
+
         if (!Object.keys(this.state.matchList).includes('message')) {
           const { matchList } = this.state;
           const matches = [ ...matchList.matches ];
           this.state.matchList.matches.forEach((match, index) => {
             if (!match.info || typeof match.info === 'string') {
-              // this.setState({ matchDataRequested: true });
-              // console.log(match);
 
               //Only the first 10 or 20 matches should be retrieved,
               //the others paginated or behind a never-ending scroll.
-              //Otherwise, if someone has hundreds of matches, the server will
-              //effectively hang for all other clients while it fetches the matchInfo.
+              //It's a lot of data to get if they have 100s of matches.
+              // console.log('username: ', username);
 
-              //Or spawn a child process to deal with each response, leaving the
-              //main thread free to handle other requests...?
               axios
-                .get(`/api/telemetry/${this.state.username}/${match.id}/${match.telemetryURL}`, {
+                .get(`/api/telemetry/${username}/${match.id}/${match.telemetryURL}`, {
                   cancelToken: this._source.token
                 })
                 .then(res => {
                   matches[index] = res.data;
                   this.setState({ ...this.state, matchList: { ...matchList, matches } }, () => {
-                    // console.log(this.state);
+                    console.log(this.state);
                   });
                 })
                 .catch(err => console.log('Request for match data cancelled.', err.message || err));
@@ -63,13 +70,7 @@ class Index extends React.Component{
   }
 
   componentWillUnmount(){
-    // const CancelToken = axios.CancelToken;
-    // const source = CancelToken.source();
-    console.log('componentWillUnmount fired');
     this._source.cancel('Request cancelled by user.');
-    // if(matchListReceived) {
-    //   console.log('matchListReceived: ', matchListReceived);
-    // }
   }
 
   sortAndFilter = () => {
@@ -84,13 +85,54 @@ class Index extends React.Component{
   }
 
   getOrdinal = (number) => {
-    var suffix=['th','st','nd','rd'],
-      value=number%100;
-    return number+(suffix[(value-20)%10]||suffix[value]||suffix[0]);
+    const suffix = ['th','st','nd','rd'];
+    const value = number % 100;
+    return number + (suffix[(value - 20) % 10] || suffix[value] || suffix[0]);
   }
 
   handleChange = () => {
     this.setState({ gameModeFPP: !this.state.gameModeFPP });
+  }
+
+  handleSeasonChange = ({ target: { value } }) => {
+
+
+    if(value === 'new') {
+      const select = document.getElementById('season');
+      const oldestSeason = select.childNodes[select.childElementCount - 2].value.split('-');
+      const previousMonth = () => {
+        if(`${parseInt(oldestSeason[1]) - 1}`.length === 1)
+          return `0${parseInt(oldestSeason[1]) - 1}`;
+        return `${parseInt(oldestSeason[1]) - 1}`;
+      };
+      const date = `${oldestSeason[0]}-${previousMonth()}`;
+
+      return axios
+        .get(`/api/seasons/${this.state.username}/${this.state.matchList.id}/${date}`, {
+          cancelToken: this._source.token
+        })
+        .then(res => this.setState({ playerSeason: res.data }, () => {
+          const selectSeason = res.data.filter(season => season.date === date)[0];
+          this.setState({ selectSeason, selectValue: date });
+        }))
+        .catch(err => console.log('Request for older season data cancelled.', err.message || err));
+    }
+
+    return this.setState({ selectValue: value }, () => {
+      const selectSeason = this.state.playerSeason.filter(season =>
+        season.date === this.state.selectValue)[0];
+      this.setState({ selectSeason }, () => console.log(this.state.selectSeason));
+    });
+  }
+
+  getValue = () => {
+    if(!this.state.selectValue && this.sortAndFilter()[0])
+      this.setState({ selectValue: this.sortAndFilter()[0].date }, () => {
+        const selectSeason = this.state.playerSeason.filter(season => {
+          return (season.date === this.state.selectValue || season.date === '2018-08');
+        })[0];
+        this.setState({ selectSeason });
+      });
   }
 
   render(){
@@ -114,18 +156,23 @@ class Index extends React.Component{
           button='Home'
           url='/'
         />
+        {this.state.playerSeason &&
+          <PlayerSeason
+            seasonData = {this.state.playerSeason}
+            selectSeason = {this.state.selectSeason}
+            selectValue = {this.state.selectValue}
+            gameModeFPP = {this.state.gameModeFPP}
+            getValue = {this.getValue}
+            handleChange = {this.handleChange}
+            handleSeasonChange = {this.handleSeasonChange}
+          />}
+
         <div className='index'>
           {this.state.matchList.message &&
             <ErrorHandler
               message = {this.state.matchList.message}
             />}
 
-          {this.state.matchList.playerSeason &&
-          <PlayerSeason
-            seasonData = {this.state.matchList.playerSeason}
-            handleChange = {this.handleChange}
-            gameModeFPP = {this.state.gameModeFPP}
-          />}
 
           {this.sortAndFilter().map(match => {
             const playDate = new Date(match.createdAt);
@@ -180,13 +227,20 @@ class Index extends React.Component{
                           `Kills – ${info[players[index]].kills.length},`}
                           <br />
                           {info[players[index]].avgFPS &&
-                              <span>
-                                Average FPS – {parseInt(info[players[index]].avgFPS)}
-                                <br />
-                              </span>}
-                          {info[players[index]].death &&
-                          `Killed by ${info[players[index]].death.killer.name}.`}
+                            <span>
+                              Average FPS – {parseInt(info[players[index]].avgFPS)}
+                              <br />
+                            </span>}
                         </p>
+                        {info[players[index]].death &&
+                        <div className='button'>
+                          <Link
+                            to = {`/matches/${info[players[index]].death.killer.name}`}
+                            target='_blank'
+                          >
+                            Killed by {info[players[index]].death.killer.name}
+                          </Link>
+                        </div>}
                       </div>)}
                   </div>}
 
@@ -199,7 +253,7 @@ class Index extends React.Component{
                       }
                     }}
                   >
-                    Show More
+                    Show Map
                   </Link>
                 </div>
               </div>

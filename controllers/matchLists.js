@@ -1,12 +1,11 @@
 const rp = require('request-promise');
 const MatchList = require('../models/matchList');
-const PlayerSeason = require('../models/playerSeason');
 const Match = require('../models/match');
 const MatchInfo = require('../models/matchInfo'); // eslint-disable-line
 
 
-function playerMatchList(req, res, next) {
-  // console.log('Checking matchList DB...');
+function getMatchList(req, res, next) {
+  console.log('Checking matchList DB...');
 
   let oldMatchList;
   let stillMore = true;
@@ -26,13 +25,9 @@ function playerMatchList(req, res, next) {
       } else {
 
         oldMatchList = matchList[0];
-
-        // console.log(matchList);
-
         const matchListDate = new Date(matchList[0].attributes.createdAt).getTime();
         const currentDate = new Date().getTime();
         const timer = (matchListDate + 60000 - currentDate)/1000;
-        // const seasonTimer = (matchListDate + 300000 - currentDate)/1000;
 
         if(timer <= 0){
           console.log('Timer\'s up. Getting new matchList...');
@@ -51,35 +46,23 @@ function playerMatchList(req, res, next) {
   function createMatchList(matchListData, matches, newMatches, oldMatches) {
 
     if(stillMore && (newMatches.length + oldMatches.length === matches.length)){
-      // console.log('All matches received. Sending matches.');
-
       stillMore = false;
 
       Match
         .create(newMatches)
         .then(newMatches => {
           const newMatchData = newMatches;
-          const playerSeasonData = playerSeason(matchListData);
           return MatchList
             .create(matchListData)
-            .then(async matchList => {
-              if (playerSeason) {
-                matchList.playerSeason = await playerSeasonData;
-              }
-              // Object.assign(matchList.matches, oldMatches, newMatches);
-              if (oldMatches && oldMatches[0]) oldMatches.forEach(match => {
-                matchList.matches.push(match);
-              });
-              if (newMatchData && newMatchData[0]) newMatchData.forEach(match => {
-                // console.log('newMatchData: ', newMatchData);
-                matchList.matches.push(match);
-              });
-              // console.log('matchList: ', matchList);
+            .then(matchList => {
+              if (oldMatches && oldMatches[0]) oldMatches.forEach(match =>
+                matchList.matches.push(match));
+              if (newMatchData && newMatchData[0]) newMatchData.forEach(match =>
+                matchList.matches.push(match));
               return matchList.save();
             });
         })
         .then(matchData => {
-          // console.log('match data here: ', matchData);
           showNewMatchList(matchData);
         })
         .catch(next);
@@ -87,7 +70,6 @@ function playerMatchList(req, res, next) {
   }
 
   function showOldMatchList(oldMatchList) {
-    // console.log('MatchList sent.');
 
     new Promise((resolve, reject) => {
       if(!oldMatchList) reject('Too many requests.');
@@ -97,7 +79,6 @@ function playerMatchList(req, res, next) {
   }
 
   function showNewMatchList(matchListData) {
-    // console.log('MatchList sent.');
     if(oldMatchList) oldMatchList.remove();
     MatchList
       .create(matchListData)
@@ -118,7 +99,6 @@ function playerMatchList(req, res, next) {
       json: true
     })
       .then(matchList => {
-        // console.log('MatchList received. Getting matches...');
 
         const matchListData = matchList.data[0];
         const matchListTime = matchListData.attributes.createdAt.split('-');
@@ -132,8 +112,6 @@ function playerMatchList(req, res, next) {
         if(!matchListData.relationships.matches.data[0])
           throw 'No matches available! Play a match and then come back. It can take a while for PUBG to record it!';
 
-
-
         matches.forEach(match => {
           Match
             .find({id: match.id})
@@ -146,7 +124,7 @@ function playerMatchList(req, res, next) {
               if(!match) {
                 return createMatchList(matchListData, matches, newMatches, oldMatches);
               } else if(!match) return null;
-              // console.log('match: ', match);
+
               rp({
                 method: 'GET',
                 url: `https://api.playbattlegrounds.com/shards/pc-eu/matches/${match.id}`,
@@ -195,86 +173,26 @@ function playerMatchList(req, res, next) {
         if(next.message === '429 - undefined' ||
            next.message === 'Error: getaddrinfo ENOTFOUND api.playbattlegrounds.com api.playbattlegrounds.com:443' ||
            next.message === 'Error: read ETIMEDOUT'){
-          return showOldMatchList(oldMatchList);
+          try {
+            return showOldMatchList(oldMatchList);
+          } catch(err) {
+            console.log(err);
+          }
         } else res.json({message: next.message || next});
       });
   }
-
-  //Make playerSeason stats available even when
-  //you have no matches.
-
-  function playerSeason(matchList) {
-    console.log('Checking playerSeason DB...');
-
-    return PlayerSeason
-      .find({ date: matchList.date, username })
-      .then(seasonData => {
-        // console.log(matchList.date);
-        if(!seasonData[0]) {
-          console.log('No old playerSeason available. Getting new playerSeason...');
-          return getNewPlayerSeason(matchList);
-        } else {
-
-          const seasonDate = new Date(seasonData[0].createdAt).getTime();
-          const currentDate = new Date().getTime();
-          const timer = (seasonDate + 300000 - currentDate)/1000;
-
-          if(timer <= 0){
-            console.log('Timer\'s up. Getting new seasonData...');
-            seasonData[0].remove();
-            return getNewPlayerSeason(matchList);
-
-          } else {
-            console.log(`${timer} seconds remaining. Showing old playerSeason...`);
-            return seasonData[0];
-          }
-
-        }
-      });
-
-
-    function getNewPlayerSeason(matchList) {
-      return new Promise(resolve => {
-
-        rp({
-          method: 'GET',
-          url: `https://api.playbattlegrounds.com/shards/pc-eu/players/${matchList.id}/seasons/division.bro.official.${matchList.date}`,
-          headers: {
-            Authorization: `Bearer ${process.env.PUBG_API_KEY}`,
-            Accept: 'application/vnd.api+json'
-          },
-          json: true
-        })
-          .then(playerSeason => {
-            PlayerSeason
-              .create(playerSeason.data.attributes.gameModeStats)
-              .then(playerSeason => {
-                console.log('Player season received.');
-                playerSeason.createdAt = new Date();
-                playerSeason.date = matchList.date;
-                playerSeason.username = username;
-                playerSeason.save();
-                resolve(playerSeason);
-              })
-              .catch(next);
-          })
-          .catch(next);
-      });
-    }
-  }
 }
 
-function matchInfo(req, res) {
+function getMatchInfo(req, res) {
   const { fork } = require('child_process');
   const matchData = fork('controllers/matchInfos.js');
   matchData.on('message', (matchInfo) => {
     res.json(matchInfo);
   });
-
   matchData.send(req.params);
 }
 
 module.exports = {
-  matchList: playerMatchList,
-  match: matchInfo
+  getList: getMatchList,
+  getInfo: getMatchInfo
 };

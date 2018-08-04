@@ -11,11 +11,7 @@ const matchListSchema = new mongoose.Schema({
   matches: [{
     type: mongoose.Schema.ObjectId,
     ref: 'Match'
-  }],
-  playerSeason: {
-    type: mongoose.Schema.ObjectId,
-    ref: 'PlayerSeason'
-  }
+  }]
 });
 
 matchListSchema.query.byName = function(name) {

@@ -1,21 +1,47 @@
 import React from 'react';
 
-const PlayerSeason = ({ seasonData, handleChange, gameModeFPP }) => {
+
+const PlayerSeason = ({
+  seasonData, handleChange, gameModeFPP, handleSeasonChange, selectValue, getValue, selectSeason }) => {
+
+  const selectedSeason = selectSeason || seasonData.filter(data => {
+    // console.log(data.date);
+    return (data.date === selectValue || data.date === '2018-08');
+  })[0];
+
 
   const killDeathRatio = function(gameMode) {
-    const kDR = seasonData[gameMode].kills /
-    (seasonData[gameMode].roundsPlayed - seasonData[gameMode].wins);
+    const kDR = selectedSeason[gameMode].kills /
+    (selectedSeason[gameMode].roundsPlayed - selectedSeason[gameMode].wins);
     return kDR.toFixed(2);
   };
   const killsDeathsAssists = function(gameMode) {
-    const kDA = (seasonData[gameMode].kills + seasonData[gameMode].assists) /
-    (seasonData[gameMode].roundsPlayed - seasonData[gameMode].wins);
+    const kDA = (selectedSeason[gameMode].kills + selectedSeason[gameMode].assists) /
+    (selectedSeason[gameMode].roundsPlayed - selectedSeason[gameMode].wins);
     return kDA.toFixed(2);
   };
 
 
+
   return (
     <div className='blue stats'>
+      <div className='button'>
+        <label htmlFor='season'>Available seasons: </label>
+        <select
+          value = {selectValue}
+          onChange = {(e) => handleSeasonChange(e)}
+          onLoad = {getValue()}
+          id='season'
+        >
+          {seasonData
+            .sort((a,b) => new Date(b.date) - new Date(a.date))
+            .map(season =>
+              <option value={season.date} key={season.id}>
+                Season {season.date.split('-')[1]}
+              </option>)}
+          <option value='new'>Get previous Season</option>
+        </select>
+      </div>
       <div>
         <label htmlFor='gameMode'>GameMode: </label>
         <div className="radio">
@@ -35,27 +61,28 @@ const PlayerSeason = ({ seasonData, handleChange, gameModeFPP }) => {
           </label>
         </div>
       </div>
-      {Object
-        .keys(seasonData)
+      {selectedSeason && Object
+        .keys(selectedSeason)
         .filter(key => {
           if(gameModeFPP) return key.includes('fpp');
-          return (typeof seasonData[key] === 'object' &&
+          return (typeof selectedSeason[key] === 'object' &&
                   !key.includes('fpp'));
         })
         .map(gameMode =>
           <div key={gameMode}>
             <h3>{gameMode}</h3>
             <p>
-              Kills: {seasonData[gameMode].kills}<br />
-              Longest Kill: {seasonData[gameMode].longestKill.toFixed(2)}m<br />
-              Headshot Kills: {seasonData[gameMode].headshotKills}<br />
-              Max KillStreak: {seasonData[gameMode].maxKillStreaks}<br />
-              Max KillStreak: {seasonData[gameMode].maxKillStreaks}<br />
-              Games Played: {seasonData[gameMode].roundsPlayed}<br />
+              Kills: {selectedSeason[gameMode].kills}<br />
+              Longest Kill: {selectedSeason[gameMode].longestKill.toFixed(2)}m<br />
+              Headshot Kills: {selectedSeason[gameMode].headshotKills}<br />
+              Max KillStreak: {selectedSeason[gameMode].maxKillStreaks}<br />
+              Max KillStreak: {selectedSeason[gameMode].maxKillStreaks}<br />
+              Games Played: {selectedSeason[gameMode].roundsPlayed}<br />
               KDR: {killDeathRatio(gameMode) || 0}<br />
               KDA: {killsDeathsAssists(gameMode) || 0}<br />
             </p>
-          </div>)}
+          </div>
+        )}
     </div>
   );
 };
