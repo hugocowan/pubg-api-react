@@ -56,6 +56,7 @@ process.on('message', (params) => {
       console.log('MatchInfo sent from DB.');
       match.save();
       process.send(match);
+      mongoose.connection.close();
     })
     .catch((next) => {
       // console.log('Requesting match data, ', next.message ||
@@ -68,6 +69,7 @@ process.on('message', (params) => {
           button: 'Home',
           url: '/'
         });
+        mongoose.connection.close();
       } else next;
     });
 
@@ -92,6 +94,7 @@ process.on('message', (params) => {
             button: 'Home',
             url: '/'
           });
+          mongoose.connection.close();
         }
       });
   }
@@ -176,6 +179,7 @@ process.on('message', (params) => {
             match.info = matchData;
             match.save();
             process.send(match);
+            mongoose.connection.close();
           });
       });
   }

@@ -36,35 +36,48 @@ class Index extends React.Component{
             cancelToken: this._source.token
           })
           .then(res => this.setState({ playerSeason: res.data }, () => {
-            console.log(this.state);
+            // console.log(this.state);
+            const retrievedDates = this.state.playerSeason.map(season =>
+              `${season.date}`);
+
+            this.getValue(retrievedDates);
+
+            if (!Object.keys(this.state.matchList).includes('message')) {
+              const { matchList } = this.state;
+              const matches = [ ...matchList.matches ];
+
+
+              this.state.matchList.matches.forEach((match, index) => {
+                if (!match.info || typeof match.info === 'string') {
+
+
+                  if(!retrievedDates.includes(match.date)) {
+                    console.log('Season date not found!');
+                    retrievedDates.push(match.date);
+                    this.handleSeasonChange({ target: { date: match.date } });
+                  }
+
+                  //Only the first 10 or 20 matches should be retrieved,
+                  //the others paginated or behind a never-ending scroll.
+                  //It's a lot of data to get if they have 100s of matches.
+                  // console.log('username: ', username);
+
+                  axios
+                    .get(`/api/telemetry/${username}/${match.id}/${match.telemetryURL}`, {
+                      cancelToken: this._source.token
+                    })
+                    .then(res => {
+                      matches[index] = res.data;
+                      this.setState({ ...this.state, matchList: { ...matchList, matches } }, () => {
+                        // console.log(this.state);
+                      });
+                    })
+                    .catch(err => console.log('Request for match data cancelled.', err.message || err));
+                }
+              });
+            }
           }))
           .catch(err => console.log('Request for average season data cancelled.', err.message || err));
-
-        if (!Object.keys(this.state.matchList).includes('message')) {
-          const { matchList } = this.state;
-          const matches = [ ...matchList.matches ];
-          this.state.matchList.matches.forEach((match, index) => {
-            if (!match.info || typeof match.info === 'string') {
-
-              //Only the first 10 or 20 matches should be retrieved,
-              //the others paginated or behind a never-ending scroll.
-              //It's a lot of data to get if they have 100s of matches.
-              // console.log('username: ', username);
-
-              axios
-                .get(`/api/telemetry/${username}/${match.id}/${match.telemetryURL}`, {
-                  cancelToken: this._source.token
-                })
-                .then(res => {
-                  matches[index] = res.data;
-                  this.setState({ ...this.state, matchList: { ...matchList, matches } }, () => {
-                    console.log(this.state);
-                  });
-                })
-                .catch(err => console.log('Request for match data cancelled.', err.message || err));
-            }
-          });
-        }
       }))
       .catch(err => console.log('Request for match list cancelled.', err.message || err));
   }
@@ -81,7 +94,7 @@ class Index extends React.Component{
              re.test(match.mapName) ||
              re.test(match.gameMode);
     });
-    return _.orderBy(filtered, field, dir);
+    return _.orderBy(filtered, field, dir).filter(match => match.date === this.state.selectValue);
   }
 
   getOrdinal = (number) => {
@@ -94,8 +107,17 @@ class Index extends React.Component{
     this.setState({ gameModeFPP: !this.state.gameModeFPP });
   }
 
-  handleSeasonChange = ({ target: { value } }) => {
+  handleSeasonChange = ({ target: { value, date } }) => {
 
+    if(date) {
+      // console.log('Getting old season...');
+      return axios
+        .get(`/api/seasons/${this.state.username}/${this.state.matchList.id}/${date}`, {
+          cancelToken: this._source.token
+        })
+        .then(res => this.setState({ playerSeason: res.data }))
+        .catch(err => console.log('Request for older season data cancelled.', err.message || err));
+    }
 
     if(value === 'new') {
       const select = document.getElementById('season');
@@ -121,18 +143,19 @@ class Index extends React.Component{
     return this.setState({ selectValue: value }, () => {
       const selectSeason = this.state.playerSeason.filter(season =>
         season.date === this.state.selectValue)[0];
-      this.setState({ selectSeason }, () => console.log(this.state.selectSeason));
+      this.setState({ selectSeason });
     });
   }
 
-  getValue = () => {
-    if(!this.state.selectValue && this.sortAndFilter()[0])
-      this.setState({ selectValue: this.sortAndFilter()[0].date }, () => {
-        const selectSeason = this.state.playerSeason.filter(season => {
-          return (season.date === this.state.selectValue || season.date === '2018-08');
-        })[0];
+  getValue = (retrievedDates) => {
+    const value = retrievedDates.sort((a,b) => new Date(b.date) - new Date(a.date))[0];
+    if(!this.state.selectValue) {
+      this.setState({ selectValue: value }, () => {
+        const selectSeason = this.state.playerSeason.filter(season =>
+          season.date === this.state.selectValue)[0];
         this.setState({ selectSeason });
       });
+    }
   }
 
   render(){

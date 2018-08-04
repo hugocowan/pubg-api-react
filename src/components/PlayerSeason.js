@@ -30,7 +30,7 @@ const PlayerSeason = ({
         <select
           value = {selectValue}
           onChange = {(e) => handleSeasonChange(e)}
-          onLoad = {getValue()}
+          // onLoad = {getValue()}
           id='season'
         >
           {seasonData
