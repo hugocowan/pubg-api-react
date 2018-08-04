@@ -29,14 +29,14 @@ class Index extends React.Component{
         cancelToken: this._source.token
       })
       .then(res => this.setState({ matchList: res.data }, () => {
-        console.log('matchList: ',this.state.matchList);
+        // console.log('matchList: ',this.state.matchList);
 
         axios
           .get(`/api/seasons/${username}/${this.state.matchList.id}`, {
             cancelToken: this._source.token
           })
           .then(res => this.setState({ playerSeason: res.data }, () => {
-            // console.log(this.state);
+            console.log(this.state);
             const retrievedDates = this.state.playerSeason.map(season =>
               `${season.date}`);
 
@@ -135,7 +135,7 @@ class Index extends React.Component{
         })
         .then(res => this.setState({ playerSeason: res.data }, () => {
           const selectSeason = res.data.filter(season => season.date === date)[0];
-          this.setState({ selectSeason, selectValue: date });
+          this.setState({ selectSeason, selectValue: date }, () => console.log(this.state));
         }))
         .catch(err => console.log('Request for older season data cancelled.', err.message || err));
     }
@@ -195,6 +195,11 @@ class Index extends React.Component{
             <ErrorHandler
               message = {this.state.matchList.message}
             />}
+
+          {!this.sortAndFilter()[0] && !this.state.matchList.message &&
+          <div className='blue'>
+            No matches in the database for this season.
+          </div>}
 
 
           {this.sortAndFilter().map(match => {

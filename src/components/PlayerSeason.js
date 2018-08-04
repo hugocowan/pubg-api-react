@@ -2,7 +2,7 @@ import React from 'react';
 
 
 const PlayerSeason = ({
-  seasonData, handleChange, gameModeFPP, handleSeasonChange, selectValue, getValue, selectSeason }) => {
+  seasonData, handleChange, gameModeFPP, handleSeasonChange, selectValue, selectSeason }) => {
 
   const selectedSeason = selectSeason || seasonData.filter(data => {
     // console.log(data.date);

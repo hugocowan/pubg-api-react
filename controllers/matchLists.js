@@ -110,7 +110,10 @@ function getMatchList(req, res, next) {
         matchListData.date = `${matchListTime[0]}-${matchListTime[1]}`;
 
         if(!matchListData.relationships.matches.data[0])
-          throw 'No matches available! Play a match and then come back. It can take a while for PUBG to record it!';
+          return res.json({
+            message: 'No matches available! Play a match and then come back. It can take a while for PUBG to record it!',
+            id: matchListData.id
+          });
 
         matches.forEach(match => {
           Match
@@ -187,6 +190,7 @@ function getMatchInfo(req, res) {
   const { fork } = require('child_process');
   const matchData = fork('controllers/matchInfos.js');
   matchData.on('message', (matchInfo) => {
+    matchData.kill('SIGINT');
     res.json(matchInfo);
   });
   matchData.send(req.params);
