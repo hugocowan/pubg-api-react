@@ -1,5 +1,4 @@
 const MatchInfo = require('../models/matchInfo');
-const maps = require('./maps');
 const Match = require('../models/match');
 const { dbURI } = require('../config/environment');
 
@@ -14,6 +13,7 @@ process.on('message', (params) => {
 
   const { username, matchId } = params;
   const url = params[0];
+  let _match;
 
   async function asyncForEach(array, callback) {
     for (let index = 0; index < array.length; index++) {
@@ -25,22 +25,17 @@ process.on('message', (params) => {
     .findOne({ 'attributes.id': matchId })
     .populate('info')
     .then(match => {
-      if(!match) {
-        // console.log('No match found in DB...');
-        throw 'No match in DB.';
-      }
+      _match = match._doc;
+      if(!match) throw 'No match in DB.';
+      if(!match.info) throw 'No match info in DB.';
 
-      if(!match.info) {
-        // console.log('No match info found in DB...');
-        throw 'No match data in DB.';
-      }
       const matchInfo = match._doc.info._doc;
 
-      const playerCount = Object.keys(matchInfo)
-        .filter(key => matchInfo[key].username);
+      const playerCount = Object.keys(_match)
+        .filter(key => _match[key].username);
 
       const playerNames = playerCount.map((player, index) =>
-        matchInfo[`player${index+1}`].username);
+        _match[`player${index+1}`].username);
 
       const playerValues = playerNames.map(playerName => {
         return getValues(playerName, playerNames, matchInfo);
@@ -59,9 +54,10 @@ process.on('message', (params) => {
       mongoose.connection.close();
     })
     .catch((next) => {
-      if(next === 'No match data in DB.') {
-        getMatchInfo();
-      } else if(next === 'No match in DB.') {
+      if(next === 'No match info in DB.') {
+        return getMatchInfo(_match);
+      }
+      if(next === 'No match in DB.') {
         process.send({
           message: 'No match found in the database! Try going back to the homepage.',
           button: 'Home',
@@ -73,7 +69,7 @@ process.on('message', (params) => {
 
 
 
-  function getMatchInfo() {
+  function getMatchInfo(match) {
     rp({
       method: 'GET',
       url: url,
@@ -82,7 +78,7 @@ process.on('message', (params) => {
       },
       json: true
     })
-      .then(matchInfo => filterMatchInfo(matchInfo))
+      .then(matchInfo => filterMatchInfo(matchInfo, match))
       .catch(next => {
         console.log('getting matchData failed, ', next.message || next);
         if(next.message === 'RequestError: Error: getaddrinfo ENOTFOUND telemetry-cdn.playbattlegrounds.com telemetry-cdn.playbattlegrounds.com:443'){
@@ -98,12 +94,14 @@ process.on('message', (params) => {
 
 
 
-  async function filterMatchInfo(matchInfo) {
+  async function filterMatchInfo(matchInfo, match) {
 
-    const playerNames = [username];
+    const playerNames = Object.keys(match).filter(key =>
+      match[key].name).map(player =>
+      match[player].name);
+
     const matchData = {};
     const teams = [];
-    const id = matchInfo[0].MatchId.split('.');
     const playerData = {};
 
     matchInfo.forEach(data => {
@@ -112,9 +110,7 @@ process.on('message', (params) => {
     });
 
     matchData.attributes = {
-      matchId: id[id.length-1],
       ping: matchInfo[0].PingQuality,
-      date: matchInfo[0]._D,
       teams: teams.length
     };
 
@@ -160,7 +156,6 @@ process.on('message', (params) => {
     await asyncForEach(playerNames, async (username) =>
       await getValues(username, playerNames, matchData, playerData));
 
-    console.log('MatchInfo sent from PUBG API.');
 
     MatchInfo
       .create(matchData)
@@ -169,7 +164,10 @@ process.on('message', (params) => {
           .findOne({ 'attributes.id': matchId })
           .then(match => {
             match.info = matchData;
-            match.save();
+            return match.save();
+          })
+          .then(match => {
+            console.log('MatchInfo sent from PUBG API.');
             process.send(match);
             mongoose.connection.close();
           });
@@ -194,10 +192,9 @@ process.on('message', (params) => {
 
       matchData[player] = matchData[player] || {};
 
-      if(playerData && (matchData[player].username !== playerName ||
-        !matchData[player].mapData)){
+      if(playerData && !matchData[player].mapData){
 
-        const playerCoords = playerData[player].data.reduce((locationData, data) => {
+        matchData[player].coords = playerData[player].data.reduce((locationData, data) => {
 
           const coords = data.character ? data.character.location :
             data.attacker && data.attacker.name === playerName &&
@@ -215,19 +212,10 @@ process.on('message', (params) => {
           if(location.coords) locationData.push(location);
           return locationData;
         }, []);
-
-        maps
-          .getMap(playerCoords)
-          .then(data => {
-            matchData[player].mapData = data;
-            resolve(matchData);
-          })
-          .catch(err => console.log('error in map generation: ', err));
       }
 
 
-      if (playerData && (matchData[player].username !== playerName ||
-         !matchData[player].death)) matchData[player].death =
+      if (playerData && !matchData[player].death) matchData[player].death =
           playerData[player].data.reduce((deathData, data) => {
             if(data.killer &&
               data.victim.name === playerName &&
@@ -237,8 +225,7 @@ process.on('message', (params) => {
             return deathData;
           }, {});
 
-      if (playerData && (matchData[player].username !== playerName ||
-         !matchData[player].kills)) matchData[player].kills =
+      if (playerData && !matchData[player].kills) matchData[player].kills =
         playerData[player].data.reduce((killData, data) => {
           if(data.killer &&
             data.killer.name === playerName &&
@@ -248,8 +235,7 @@ process.on('message', (params) => {
           return killData;
         }, []);
 
-      if (playerData && (matchData[player].username !== playerName ||
-         !matchData[player].avgFPS)) matchData[player].avgFPS =
+      if (playerData && !matchData[player].avgFPS) matchData[player].avgFPS =
           playerData[player].data.reduce((total, data) => {
             if(data.maxFPS) {
               index += 1;
@@ -258,14 +244,11 @@ process.on('message', (params) => {
           }, 0)/index;
 
 
-      if (playerData && (matchData[player].username !== playerName ||
-         matchData[player].time)) playerData[player].data.forEach(data => {
-        if(data.elapsedTime) matchData[player].time = data.elapsedTime;
-      });
-
-      if (matchData[player].username !== playerName ||
-         !matchData[player].username) matchData[player].username = username;
-
+      if (playerData && !matchData[player].time)
+        playerData[player].data.forEach(data => {
+          if(data.elapsedTime) matchData[player].time = data.elapsedTime;
+        });
+      resolve(matchData);
     });
   }
 

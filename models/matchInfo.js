@@ -2,9 +2,7 @@ const mongoose = require('mongoose');
 
 const matchInfoSchema = new mongoose.Schema({
   attributes: {
-    matchId: { type: String },
     ping: { type: String },
-    date: { type: Date },
     teams: { type: Number }
   },
   player1: {
@@ -12,37 +10,28 @@ const matchInfoSchema = new mongoose.Schema({
     time: {},
     kills: {},
     death: {},
-    data: {},
-    coords: {},
-    username: {},
-    mapData: {}
+    coords: {}
   },
   player2: {
     avgFPS: {},
     time: {},
     kills: {},
     death: {},
-    data: {},
-    coords: {},
-    username: {}
+    coords: {}
   },
   player3: {
     avgFPS: {},
     time: {},
     kills: {},
     death: {},
-    data: {},
-    coords: {},
-    username: {}
+    coords: {}
   },
   player4: {
     avgFPS: {},
     time: {},
     kills: {},
     death: {},
-    data: {},
-    coords: {},
-    username: {}
+    coords: {}
   }
 });
 

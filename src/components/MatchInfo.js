@@ -3,7 +3,7 @@ import moment from 'moment';
 import { Link } from 'react-router-dom';
 
 
-const MatchInfo = ({ match, getOrdinal, reload }) => {
+const MatchInfo = ({ match, getOrdinal, reload, getMap, map }) => {
 
   const attrs = match.attributes;
   const players = Object.keys(match).filter(key => match[key].name);
@@ -55,36 +55,28 @@ const MatchInfo = ({ match, getOrdinal, reload }) => {
               <br />
               Kills – {match[players[index]].kills}.
               <br />
-              {match[players[index]].avgFPS &&
+              {match.info && match.info[players[index]].avgFPS &&
                 <span>
                   Average FPS – {parseInt(match[players[index]].avgFPS)}
                   <br />
                 </span>}
             </p>
-            {match[players[index]].death &&
+            {match.info && match.info[players[index]].death &&
             <div className='button'>
               <Link
-                to = {`/matches/${match[players[index]].death.killer.name}`}
+                to = {`/matches/${match.info && match.info[players[index]].death.killer.name}`}
                 target='_blank'
               >
-                Killed by {match[players[index]].death.killer.name}
+                Killed by {match.info && match.info[players[index]].death.killer.name}
               </Link>
             </div>}
           </div>)}
       </div>
 
+      {typeof match.info === 'object' && !map &&
       <div className='button'>
-        <Link
-          to={{
-            pathname: `/matches/${match.player1.name}/${match.attributes.id}`,
-            state: {
-              telemetryURL: match.attributes.telemetryURL
-            }
-          }}
-        >
-          Show Map
-        </Link>
-      </div>
+        <a onClick={() => getMap(match)}>Show Map</a>
+      </div>}
     </div>
   );
 };

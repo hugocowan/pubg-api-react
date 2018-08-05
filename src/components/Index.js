@@ -43,19 +43,20 @@ class Index extends React.Component{
             this.getValue(retrievedDates);
 
             if (!Object.keys(this.state.matchList).includes('message')) {
-              // const { matchList } = this.state;
-              // const matches = [ ...matchList.matches ];
+              const { matchList } = this.state;
+              const matches = [ ...matchList.matches ];
 
 
-              this.state.matchList.matches.forEach((match) => {
+              this.state.matchList.matches.forEach((match, index) => {
                 if (!match.info || typeof match.info === 'string') {
+                  const attrs = match.attributes;
 
 
-                  if(!retrievedDates.includes(match.attributes.date)) {
+                  if(!retrievedDates.includes(attrs.date)) {
                     console.log('Season date not found!');
-                    retrievedDates.push(match.attributes.date);
+                    retrievedDates.push(attrs.date);
                     this.handleSeasonChange({ target: {
-                      date: match.attributes.date
+                      date: attrs.date
                     } });
                   }
 
@@ -64,18 +65,18 @@ class Index extends React.Component{
                   //It's a lot of data to get if they have 100s of matches.
                   // console.log('username: ', username);
 
-                  // axios
-                  //   .get(`/api/telemetry/${username}/${match.id}/${match.telemetryURL}`, {
-                  //     cancelToken: this._source.token
-                  //   })
-                  //   .then(res => {
-                  //     matches[index] = res.data;
-                  //     this.setState({ ...this.state, matchList: { ...matchList, matches } }, () => {
-                  //       if(this.state.matchList.matches.length === index + 1)
-                  //         console.log(this.state);
-                  //     });
-                  //   })
-                  //   .catch(err => console.log('Request for match data cancelled.', err.message || err));
+                  axios
+                    .get(`/api/telemetry/${username}/${attrs.id}/${attrs.telemetryURL}`, {
+                      cancelToken: this._source.token
+                    })
+                    .then(res => {
+                      matches[index] = res.data;
+                      this.setState({ ...this.state, matchList: { ...matchList, matches } }, () => {
+                        if(this.state.matchList.matches.length === index + 1)
+                          console.log(this.state);
+                      });
+                    })
+                    .catch(err => console.log('Request for match data cancelled.', err.message || err));
                 }
               });
             }
@@ -170,6 +171,20 @@ class Index extends React.Component{
     }
   }
 
+  getMap = (match) => {
+    axios
+      .get(`/api/map/${match.attributes.id}`, {
+        cancelToken: this._source.token
+      })
+      .then(res => this.setState({ mapData: res.data }, () => {
+        console.log(this.state);
+        this.showMap(match);
+      }))
+      .catch(err => {
+        console.log(`Request for mapData cancelled, ${err.message || err}`);
+      });
+  }
+
   showMap = (match) => {
     window.addEventListener('resize', this.showMap);
 
@@ -178,7 +193,7 @@ class Index extends React.Component{
       while (mapDiv.firstChild) {
         mapDiv.removeChild(mapDiv.firstChild);
       }
-      const mapData = this.state.mapMatch.info.player1.mapData;
+      const mapData = this.state.mapData;
       mapData.width = window.innerWidth;
       mapData.height = window.innerWidth * 70/100;
       return mpld3.draw_figure('map', mapData);
@@ -186,13 +201,14 @@ class Index extends React.Component{
 
 
     this.setState({ map: true, mapMatch: match }, () => {
+      console.log('here', this.state);
       const mapDiv = document.getElementById('map');
       while (mapDiv.firstChild) {
         mapDiv.removeChild(mapDiv.firstChild);
       }
 
       if(match.info) {
-        const mapData = match.info.player1.mapData;
+        const mapData = this.state.mapData;
         mapData.width = window.innerWidth;
         mapData.height = window.innerWidth * 70/100;
         mpld3.draw_figure('map', mapData);
@@ -236,8 +252,9 @@ class Index extends React.Component{
             <MatchInfo
               match={this.state.mapMatch}
               getOrdinal={this.getOrdinal}
-              showMap={this.showMap}
               map={this.state.map}
+              getMap={this.getMap}
+              reload={this.handleReload}
             />
           </div>
           <div id='map'></div>
@@ -282,8 +299,8 @@ class Index extends React.Component{
                 <MatchInfo
                   match={match}
                   getOrdinal={this.getOrdinal}
-                  showMap={this.showMap}
                   map={this.state.map}
+                  getMap={this.getMap}
                   reload={this.handleReload}
                 />
               </div>

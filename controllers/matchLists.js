@@ -29,7 +29,7 @@ function getMatchList(req, res, next) {
         const currentDate = new Date().getTime();
         const timer = (matchListDate + 60000 - currentDate)/1000;
 
-        if(timer){
+        if(timer <= 0){
           console.log('Timer\'s up. Getting new matchList...');
           getNewMatchList();
 

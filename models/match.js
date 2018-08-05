@@ -15,7 +15,9 @@ const matchSchema = new mongoose.Schema({
   player2: {},
   player3: {},
   player4: {},
-  info: { type: mongoose.Schema.ObjectId, ref: 'MatchInfo' }
+  info: {
+    type: mongoose.Schema.ObjectId, ref: 'MatchInfo'
+  }
 });
 
 matchSchema.set('toJSON', { virtuals: true });
