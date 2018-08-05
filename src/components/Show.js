@@ -69,7 +69,7 @@ class Show extends React.Component{
         <div className='show'>
           {!this.state.info && !this.state.message &&
            <div className='blue show'>Loading... (this could take a while!)</div>}
-          {this.state.message &&
+          {this.state.matchList && this.state.matchList.message &&
           <ErrorHandler
             message = {this.state.matchList.message}
           />}

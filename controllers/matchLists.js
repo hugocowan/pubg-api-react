@@ -29,7 +29,7 @@ function getMatchList(req, res, next) {
         const currentDate = new Date().getTime();
         const timer = (matchListDate + 60000 - currentDate)/1000;
 
-        if(timer <= 0){
+        if(timer){
           console.log('Timer\'s up. Getting new matchList...');
           getNewMatchList();
 
@@ -43,7 +43,7 @@ function getMatchList(req, res, next) {
     })
     .catch(next);
 
-  function createMatchList(matchListData, matches, newMatches, oldMatches) {
+  function createMatchList(matchList, matches, newMatches, oldMatches) {
 
     if(stillMore && (newMatches.length + oldMatches.length === matches.length)){
       stillMore = false;
@@ -53,7 +53,7 @@ function getMatchList(req, res, next) {
         .then(newMatches => {
           const newMatchData = newMatches;
           return MatchList
-            .create(matchListData)
+            .create(matchList)
             .then(matchList => {
               if (oldMatches && oldMatches[0]) oldMatches.forEach(match =>
                 matchList.matches.push(match));
@@ -63,7 +63,8 @@ function getMatchList(req, res, next) {
             });
         })
         .then(matchData => {
-          showNewMatchList(matchData);
+          if(oldMatchList) oldMatchList.remove();
+          res.json(matchData);
         })
         .catch(next);
     }
@@ -78,13 +79,13 @@ function getMatchList(req, res, next) {
       .catch(next => console.log(next.message || next));
   }
 
-  function showNewMatchList(matchListData) {
-    if(oldMatchList) oldMatchList.remove();
-    MatchList
-      .create(matchListData)
-      .then(matchList => res.json(matchList))
-      .catch(next);
-  }
+  // function showNewMatchList(matchList) {
+  //   if(oldMatchList) oldMatchList.remove();
+  //   MatchList
+  //     .create(matchList)
+  //     .then(matchList => res.json(matchList))
+  //     .catch(next);
+  // }
 
 
   function getNewMatchList() {
@@ -98,21 +99,20 @@ function getMatchList(req, res, next) {
       },
       json: true
     })
-      .then(matchList => {
-
-        const matchListData = matchList.data[0];
-        const matchListTime = matchListData.attributes.createdAt.split('-');
-        const matches = matchListData.relationships.matches.data;
+      .then(res => {
+        const matchList = res.data[0];
+        const matchListTime = matchList.attributes.createdAt.split('-');
+        const matches = matchList.relationships.matches.data;
         const newMatches = [];
         const oldMatches = [];
 
-        matchListData.name = matchList.data[0].attributes.name;
-        matchListData.date = `${matchListTime[0]}-${matchListTime[1]}`;
+        matchList.name = res.data[0].attributes.name;
+        matchList.date = `${matchListTime[0]}-${matchListTime[1]}`;
 
-        if(!matchListData.relationships.matches.data[0])
+        if(!matchList.relationships.matches.data[0])
           return res.json({
             message: 'No matches available! Play a match and then come back. It can take a while for PUBG to record it!',
-            id: matchListData.id
+            id: matchList.id
           });
 
         matches.forEach(match => {
@@ -125,7 +125,7 @@ function getMatchList(req, res, next) {
             })
             .then((match) => {
               if(!match) {
-                return createMatchList(matchListData, matches, newMatches, oldMatches);
+                return createMatchList(matchList, matches, newMatches, oldMatches);
               } else if(!match) return null;
 
               rp({
@@ -136,7 +136,7 @@ function getMatchList(req, res, next) {
                 },
                 json: true
               })
-                .then(match => {
+                .then(async match => {
                   const attrs = match.data.attributes;
                   const telemetryId = match.data.relationships.assets.data[0].id;
                   const date = attrs.createdAt.split('-');
@@ -146,27 +146,88 @@ function getMatchList(req, res, next) {
                     Savage_Main: 'Sanhok'
                   };
 
-                  match.included.forEach(asset => {
+                  const matchStats = await new Promise(resolve => {
 
-                    if(asset.id === telemetryId) {
+                    const matchStats = match.included.reduce((total, asset) => {
+                      total.player1 = total.player1 || {};
+                      total.attributes = total.attributes || {};
 
-                      newMatches.push({
-                        id: match.data.id,
-                        telemetryURL: asset.attributes.URL,
-                        createdAt: attrs.createdAt,
-                        date: `${date[0]}-${date[1]}`,
-                        duration: attrs.duration,
-                        gameMode: attrs.gameMode,
-                        mapName: maps[attrs.mapName],
-                        // isCustomMatchInfo: attrs.isCustomMatchInfo,
-                        // stats: attrs.stats,
-                        // tags: attrs.tags,
-                        // titleId: attrs.titleId,
-                        shardId: attrs.shardId
+                      if(asset.id === telemetryId) {
+
+                        total.attributes = {
+                          id: match.data.id,
+                          telemetryURL: asset.attributes.URL,
+                          createdAt: attrs.createdAt,
+                          date: `${date[0]}-${date[1]}`,
+                          duration: attrs.duration,
+                          gameMode: attrs.gameMode,
+                          mapName: maps[attrs.mapName],
+                          shardId: attrs.shardId
+                        };
+                      }
+
+                      if(asset.type === 'participant' &&
+                         asset.attributes.stats.name === username) {
+                        total.player1 = {
+                          id: asset.id,
+                          ...asset.attributes.stats
+                        };
+                      }
+
+                      return total;
+                    }, {});
+                    resolve(matchStats);
+                  })
+                    .then(async matchStats => {
+                      await new Promise(resolve => {
+                        match.included.forEach(asset => {
+
+                          if(asset.type === 'roster' &&
+                        asset.relationships.participants.data.filter(player =>
+                          player.id === matchStats.player1.id)[0]) {
+                            matchStats.player1.teamId = asset.attributes.stats.teamId;
+                            const teamMates = asset.relationships.participants.data
+                              .filter(player => player.id !== matchStats.player1.id);
+
+                            if(!teamMates[0]) return resolve();
+
+                            teamMates.forEach((player, index) => {
+                              matchStats[`player${index + 2}`] = {};
+                              matchStats[`player${index + 2}`].id = player.id;
+                              index + 1 === teamMates.length ? resolve() : null;
+                            });
+                          }
+                        });
                       });
-                    }
-                  });
-                  createMatchList(matchListData, matches, newMatches, oldMatches);
+                      return matchStats;
+                    })
+                    .then(async matchStats => {
+                      await new Promise(resolve => {
+                        const teamMates = Object.keys(matchStats).filter(key =>
+                          key.match(/2|3|4/));
+
+                        if(!teamMates[0]) return resolve();
+
+                        teamMates.forEach((player, index) =>
+                          match.included.forEach(asset => {
+                            if(asset.type === 'participant' &&
+                               asset.id === matchStats[player].id) {
+                              matchStats[player] = {
+                                id: asset.id,
+                                ...asset.attributes.stats
+                              };
+                            }
+                            index + 1 === teamMates.length ? resolve() : null;
+                          }));
+                      });
+                      return matchStats;
+                    });
+                  newMatches.push(matchStats);
+                  // console.log('newMatches: ', newMatches);
+                  // console.log('matchList', matchList);
+
+
+                  createMatchList(matchList, matches, newMatches, oldMatches);
                 });
             });
         });

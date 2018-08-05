@@ -22,6 +22,18 @@ body{
   }
 }
 
+.link{
+  text-decoration: none;
+  padding: 8px;
+  &:hover{
+    color: grey;
+    background: #2F2F4F;
+    border-radius: 8px;
+    // padding: 8px;
+    cursor: pointer;
+  }
+}
+
 .match{
   background: #B0E2FF;
   border-radius: 5px;
@@ -158,9 +170,14 @@ nav{
   .button{
     margin: 10px 5px;
   }
+  .match-filter{
+    display: flex;
+    flex-wrap: wrap;
+    width: 45%;
+  }
   .matches{
     @extend .match;
-    width: 45%;
+    width: 100%;
     div{
       display: flex;
       flex-wrap: wrap;

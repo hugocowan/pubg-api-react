@@ -22,7 +22,7 @@ process.on('message', (params) => {
   }
 
   Match
-    .findOne({ 'attributes.id': matchId })
+    .findOne({ 'id': matchId })
     .populate('info')
     .then(match => {
       if(!match) {
@@ -59,6 +59,8 @@ process.on('message', (params) => {
       mongoose.connection.close();
     })
     .catch((next) => {
+      // console.log('Requesting match data, ', next.message ||
+      // next || 'no errors...');
       if(next === 'No match data in DB.') {
         getMatchInfo();
       } else if(next === 'No match in DB.') {
@@ -74,6 +76,7 @@ process.on('message', (params) => {
 
 
   function getMatchInfo() {
+    // console.log('Getting matchData from PUBG API...');
     rp({
       method: 'GET',
       url: url,
@@ -85,7 +88,7 @@ process.on('message', (params) => {
       .then(matchInfo => filterMatchInfo(matchInfo))
       .catch(next => {
         console.log('getting matchData failed, ', next.message || next);
-        if(next.message === 'RequestError: Error: getaddrinfo ENOTFOUND telemetry-cdn.playbattlegrounds.com telemetry-cdn.playbattlegrounds.com:443'){
+        if(next.message === 'Error: getaddrinfo ENOTFOUND telemetry-cdn.playbattlegrounds.com telemetry-cdn.playbattlegrounds.com:443'){
           process.send({
             message: 'Couldn\'t connect to PUBG\'s servers. Check your internet connection?',
             button: 'Home',
@@ -104,7 +107,7 @@ process.on('message', (params) => {
     const matchData = {};
     const teams = [];
     const id = matchInfo[0].MatchId.split('.');
-    const playerData = {};
+
 
     matchInfo.forEach(data => {
       if(data.character && !teams.includes(data.character.teamId))
@@ -118,31 +121,36 @@ process.on('message', (params) => {
       teams: teams.length
     };
 
-    playerData.player1 = {};
+    matchData.player1 = {};
 
-    playerData.player1.data = matchInfo.filter(data =>
+    matchData.player1.data = matchInfo.filter(data =>
       (data.character && data.character.name === username) ||
       (data.attacker && data.attacker.name === username) ||
       (data.killer && data.killer.name === username) ||
       (data.victim && data.victim.name === username));
 
+    // await getValues(username, playerNames, matchData);
 
-    const teamData = matchInfo.filter(data =>
+    const teamData = matchInfo.filter(data => {
+      // console.log('player 1\'s teamId: ', matchData.player1.data);
+
       (data.character && data.character.name !== username &&
-        data.character.teamId === playerData.player1.data[0].character.teamId) ||
+        data.character.teamId === matchData.player1.data[0].character.teamId) ||
         (data.attacker && data.attacker.name !== username &&
-          data.attacker.teamId === playerData.player1.data[0].character.teamId) ||
+          data.attacker.teamId === matchData.player1.data[0].character.teamId) ||
           (data.killer && data.killer.name !== username &&
-            data.killer.teamId === playerData.player1.data[0].character.teamId) ||
+            data.killer.teamId === matchData.player1.data[0].character.teamId) ||
             (data.victim && data.victim.name !== username &&
-              data.victim.teamId === playerData.player1.data[0].character.teamId));
+              data.victim.teamId === matchData.player1.data[0].character.teamId);
+
+    });
 
 
     teamData.forEach((data) => {
       let username;
 
       data.character && !playerNames.includes(data.character.name) ?
-        playerNames.push(data.character.name) :
+        (username = data.character.name, playerNames.push(username)) :
         data.attacker && playerNames.includes(data.attacker.name) ?
           username = data.attacker.name :
           data.killer && playerNames.includes(data.killer.name) ?
@@ -152,13 +160,13 @@ process.on('message', (params) => {
 
       const player = `player${playerNames.indexOf(username) + 1}`;
 
-      playerData[player] = playerData[player] || {};
-      playerData[player].data = playerData[player].data || [];
-      playerData[player].data.push(data);
+      matchData[player] = matchData[player] || {};
+      matchData[player].data = matchData[player].data || [];
+      matchData[player].data.push(data);
     });
 
     await asyncForEach(playerNames, async (username) =>
-      await getValues(username, playerNames, matchData, playerData));
+      await getValues(username, playerNames, matchData));
 
     console.log('MatchInfo sent from PUBG API.');
 
@@ -166,7 +174,7 @@ process.on('message', (params) => {
       .create(matchData)
       .then(matchData => {
         Match
-          .findOne({ 'attributes.id': matchId })
+          .findOne({ 'id': matchId })
           .then(match => {
             match.info = matchData;
             match.save();
@@ -178,7 +186,7 @@ process.on('message', (params) => {
 
 
 
-  async function getValues(playerName, playerNames, matchData, playerData) {
+  async function getValues(playerName, playerNames, matchData) {
 
     //To add a new property, add it in the schema too as an object.
     //The if statements make sure the property is only calculated once.
@@ -192,32 +200,32 @@ process.on('message', (params) => {
       if(player === 'player1' && playerName !== username)
         playerName = username;
 
-      matchData[player] = matchData[player] || {};
+      if (matchData[player].username !== playerName ||
+         !matchData[player].coords) matchData[player].coords =
+      matchData[player].data.reduce((locationData, data) => {
 
-      if(playerData && (matchData[player].username !== playerName ||
-        !matchData[player].mapData)){
+        const coords = data.character ? data.character.location :
+          data.attacker && data.attacker.name === playerName &&
+          data.attacker.location.x !== 0 ?
+            data.attacker.location :
+            data.killer && data.killer.name === playerName ?
+              data.killer.location :
+              data.victim && data.victim.name === playerName ?
+                data.victim.location : null;
 
-        const playerCoords = playerData[player].data.reduce((locationData, data) => {
+        const location = {
+          coords: coords,
+          time: data._D
+        };
+        if(location.coords) locationData.push(location);
+        return locationData;
+      }, []);
 
-          const coords = data.character ? data.character.location :
-            data.attacker && data.attacker.name === playerName &&
-            data.attacker.location.x !== 0 ?
-              data.attacker.location :
-              data.killer && data.killer.name === playerName ?
-                data.killer.location :
-                data.victim && data.victim.name === playerName ?
-                  data.victim.location : null;
 
-          const location = {
-            coords: coords,
-            time: data._D
-          };
-          if(location.coords) locationData.push(location);
-          return locationData;
-        }, []);
-
+      if(matchData[player].username !== playerName ||
+        !matchData[player].mapData){
         maps
-          .getMap(playerCoords)
+          .getMap(matchData[player].coords)
           .then(data => {
             matchData[player].mapData = data;
             resolve(matchData);
@@ -226,20 +234,20 @@ process.on('message', (params) => {
       }
 
 
-      if (playerData && (matchData[player].username !== playerName ||
-         !matchData[player].death)) matchData[player].death =
-          playerData[player].data.reduce((deathData, data) => {
-            if(data.killer &&
-              data.victim.name === playerName &&
-              data._T === 'LogPlayerKill'){
-              deathData = data;
-            }
-            return deathData;
-          }, {});
+      if (matchData[player].username !== playerName ||
+         !matchData[player].death) matchData[player].death =
+      matchData[player].data.reduce((deathData, data) => {
+        if(data.killer &&
+          data.victim.name === playerName &&
+          data._T === 'LogPlayerKill'){
+          deathData = data;
+        }
+        return deathData;
+      }, {});
 
-      if (playerData && (matchData[player].username !== playerName ||
-         !matchData[player].kills)) matchData[player].kills =
-        playerData[player].data.reduce((killData, data) => {
+      if (matchData[player].username !== playerName ||
+         !matchData[player].kills) matchData[player].kills =
+        matchData[player].data.reduce((killData, data) => {
           if(data.killer &&
             data.killer.name === playerName &&
             data._T === 'LogPlayerKill'){
@@ -248,9 +256,9 @@ process.on('message', (params) => {
           return killData;
         }, []);
 
-      if (playerData && (matchData[player].username !== playerName ||
-         !matchData[player].avgFPS)) matchData[player].avgFPS =
-          playerData[player].data.reduce((total, data) => {
+      if (matchData[player].username !== playerName ||
+         !matchData[player].avgFPS) matchData[player].avgFPS =
+          matchData[player].data.reduce((total, data) => {
             if(data.maxFPS) {
               index += 1;
               return total + data.maxFPS;
@@ -258,8 +266,8 @@ process.on('message', (params) => {
           }, 0)/index;
 
 
-      if (playerData && (matchData[player].username !== playerName ||
-         matchData[player].time)) playerData[player].data.forEach(data => {
+      if (matchData[player].username !== playerName ||
+         !matchData[player].time) matchData[player].data.forEach(data => {
         if(data.elapsedTime) matchData[player].time = data.elapsedTime;
       });
 

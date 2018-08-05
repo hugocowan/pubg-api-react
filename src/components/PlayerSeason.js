@@ -9,6 +9,8 @@ const PlayerSeason = ({
     return (data.date === selectValue || data.date === '2018-08');
   })[0];
 
+  // console.log(selectedSeason);
+
 
   const killDeathRatio = function(gameMode) {
     const kDR = selectedSeason[gameMode].kills /
