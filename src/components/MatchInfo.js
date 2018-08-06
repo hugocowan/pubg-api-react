@@ -12,11 +12,13 @@ const MatchInfo = ({ match, getOrdinal, reload, getMap, mapMatch, map }) => {
   return (
     <div key={match.id} className='matches'>
       <div>
-        <p>Game Mode: {attrs.gameMode}</p>
-        <p>Map: {attrs.mapName}</p>
-        <p>Server: {attrs.shardId}</p>
-        <p>Duration: {(attrs.duration / 60).toFixed(2)} minutes</p>
-        <p>Played {moment(playDate).fromNow()}, on {playDate.toLocaleString()}.</p>
+        <p>
+          Game Mode: {attrs.gameMode}<br />
+          Map: {attrs.mapName}<br />
+          Server: {attrs.shardId}<br />
+          Duration: {(attrs.duration / 60).toFixed(2)} minutes<br />
+          Played {moment(playDate).fromNow()}, on {playDate.toLocaleString()}.<br />
+        </p>
       </div>
 
       <div>
