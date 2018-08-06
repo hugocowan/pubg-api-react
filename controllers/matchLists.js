@@ -79,15 +79,6 @@ function getMatchList(req, res, next) {
       .catch(next => console.log(next.message || next));
   }
 
-  // function showNewMatchList(matchList) {
-  //   if(oldMatchList) oldMatchList.remove();
-  //   MatchList
-  //     .create(matchList)
-  //     .then(matchList => res.json(matchList))
-  //     .catch(next);
-  // }
-
-
   function getNewMatchList() {
 
     rp({
@@ -223,7 +214,7 @@ function getMatchList(req, res, next) {
                       return matchStats;
                     });
                   newMatches.push(matchStats);
-                  // console.log('newMatches: ', newMatches);
+                  console.log('newMatches: ', newMatches);
                   // console.log('matchList', matchList);
 
 

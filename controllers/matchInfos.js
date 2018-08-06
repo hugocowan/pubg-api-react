@@ -43,13 +43,11 @@ process.on('message', (params) => {
 
       Object.assign(match.info, ...playerValues);
 
-      return match;
+      return match.save();
 
     })
     .then(match => {
-
       console.log('MatchInfo sent from DB.');
-      match.save();
       process.send(match);
       mongoose.connection.close();
     })

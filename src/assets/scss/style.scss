@@ -20,11 +20,27 @@ body{
         cursor: pointer;
     }
   }
+  .loading{
+    display: block;
+    font-size: 16px;
+    padding: 8px;
+    border-radius: 5px;
+    background: #2F2F4F;
+    color: grey;
+  }
 }
 
 .link{
+  border: none;
+  font-size: 16px;
   text-decoration: none;
+  color: grey;
   padding: 8px;
+  margin: 5px;
+  border-radius: 5px;
+  background: #E6E8FA;
+  box-shadow: none;
+  display: inline-table;
   &:hover{
     color: grey;
     background: #2F2F4F;

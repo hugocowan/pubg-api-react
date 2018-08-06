@@ -36,7 +36,7 @@ class Index extends React.Component{
             cancelToken: this._source.token
           })
           .then(res => this.setState({ playerSeason: res.data }, () => {
-            console.log(this.state);
+            // console.log(this.state);
             const retrievedDates = this.state.playerSeason.map(season =>
               `${season.date}`);
 
@@ -172,17 +172,21 @@ class Index extends React.Component{
   }
 
   getMap = (match) => {
-    axios
-      .get(`/api/map/${match.attributes.id}`, {
-        cancelToken: this._source.token
-      })
-      .then(res => this.setState({ mapData: res.data }, () => {
-        console.log(this.state);
-        this.showMap(match);
-      }))
-      .catch(err => {
-        console.log(`Request for mapData cancelled, ${err.message || err}`);
-      });
+    this.setState({ mapMatch: match }, () => {
+      axios
+        .get(`/api/map/${match.attributes.id}`, {
+          cancelToken: this._source.token
+        })
+        .then(res => this.setState({ mapData: res.data }, () => {
+          // console.log(this.state);
+          this.showMap(match);
+        }))
+        .catch(err => {
+          console.log(`Request for mapData cancelled, ${err.message || err}`);
+        });
+
+    });
+
   }
 
   showMap = (match) => {
@@ -222,7 +226,7 @@ class Index extends React.Component{
     while (mapDiv.firstChild) {
       mapDiv.removeChild(mapDiv.firstChild);
     }
-    this.setState({ map: false });
+    this.setState({ map: false, mapMatch: '' });
   }
 
   render(){
@@ -252,9 +256,10 @@ class Index extends React.Component{
             <MatchInfo
               match={this.state.mapMatch}
               getOrdinal={this.getOrdinal}
-              map={this.state.map}
+              mapMatch={this.state.mapMatch}
               getMap={this.getMap}
               reload={this.handleReload}
+              map={this.state.map}
             />
           </div>
           <div id='map'></div>
@@ -299,9 +304,10 @@ class Index extends React.Component{
                 <MatchInfo
                   match={match}
                   getOrdinal={this.getOrdinal}
-                  map={this.state.map}
+                  mapMatch={this.state.mapMatch}
                   getMap={this.getMap}
                   reload={this.handleReload}
+                  map={this.state.map}
                 />
               </div>
             );

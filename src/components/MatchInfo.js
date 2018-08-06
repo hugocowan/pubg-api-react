@@ -3,7 +3,7 @@ import moment from 'moment';
 import { Link } from 'react-router-dom';
 
 
-const MatchInfo = ({ match, getOrdinal, reload, getMap, map }) => {
+const MatchInfo = ({ match, getOrdinal, reload, getMap, mapMatch, map }) => {
 
   const attrs = match.attributes;
   const players = Object.keys(match).filter(key => match[key].name);
@@ -19,35 +19,35 @@ const MatchInfo = ({ match, getOrdinal, reload, getMap, map }) => {
         <p>Played {moment(playDate).fromNow()}, on {playDate.toLocaleString()}.</p>
       </div>
 
+      <div>
+        <p>
+          Team: {players.map((player, index) =>
+            <span key={index}>
+              {index === 0 ?
+                `${match[player].name}, ` : players.length !== index + 1 ?
+                  <a
+                    onClick = {() => reload(match[player].name)}
+                    className='link'
+                  >
+                    {match[player].name},{' '}
+                  </a>:
+                  <a
+                    onClick = {() => reload(match[player].name)}
+                    className='link'
+                  >
+                    {match[player].name}.
+                  </a>}
+            </span>)}
+          <br />
+
+          Ranking: {getOrdinal(match.player1.winPlace)}
+
+          <br />
+
+          Time survived: {(match.player1.timeSurvived/60).toFixed(2)} minutes.
+        </p>
+      </div>
       <div className='info'>
-        <div>
-          <p>
-            Team: {players.map((player, index) =>
-              <span key={index}>
-                {index === 0 ?
-                  `${match[player].name}, ` : players.length !== index + 1 ?
-                    <a
-                      onClick = {() => reload(match[player].name)}
-                      className='link'
-                    >
-                      {match[player].name},{' '}
-                    </a>:
-                    <a
-                      onClick = {() => reload(match[player].name)}
-                      className='link'
-                    >
-                      {match[player].name}.
-                    </a>}
-              </span>)}
-            <br />
-
-              Ranking: {getOrdinal(match.player1.winPlace)}
-
-            <br />
-
-            Time survived: {(match.player1.timeSurvived/60).toFixed(2)} minutes.
-          </p>
-        </div>
 
         {players.map((player, index) =>
           <div key={index}>
@@ -55,27 +55,37 @@ const MatchInfo = ({ match, getOrdinal, reload, getMap, map }) => {
               <br />
               Kills – {match[players[index]].kills}.
               <br />
-              {match.info && match.info[players[index]].avgFPS &&
+              {match.info && !!match.info[players[index]].avgFPS &&
                 <span>
                   Average FPS – {parseInt(match[players[index]].avgFPS)}
                   <br />
                 </span>}
             </p>
             {match.info && match.info[players[index]].death &&
-            <div className='button'>
               <Link
                 to = {`/matches/${match.info && match.info[players[index]].death.killer.name}`}
                 target='_blank'
+                className='link'
               >
                 Killed by {match.info && match.info[players[index]].death.killer.name}
-              </Link>
-            </div>}
+              </Link>}
+            {match.info && !match.info[players[index]].death &&
+              <p></p>
+            }
           </div>)}
       </div>
 
-      {typeof match.info === 'object' && !map &&
+      {typeof match.info === 'object' && !mapMatch &&
       <div className='button'>
         <a onClick={() => getMap(match)}>Show Map</a>
+      </div>}
+      {mapMatch && mapMatch.id === match.id && !map &&
+      <div className='button'>
+        <a className='loading'>Loading Map...</a>
+      </div>}
+      {mapMatch && mapMatch.id !== match.id &&
+      <div className='button'>
+        <p></p>
       </div>}
     </div>
   );
