@@ -10,7 +10,7 @@ import ErrorHandler from './ErrorHandler';
 
 class Index extends React.Component{
   state = {
-    sort: 'createdAt|desc',
+    sort: 'attributes.createdAt|desc',
     search: '',
     username: this.props.match.params.username,
     gameModeFPP: true,
