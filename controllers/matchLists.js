@@ -90,14 +90,14 @@ function getMatchList(req, res, next) {
       },
       json: true
     })
-      .then(res => {
-        const matchList = res.data[0];
+      .then(list => {
+        const matchList = list.data[0];
         const matchListTime = matchList.attributes.createdAt.split('-');
         const matches = matchList.relationships.matches.data;
         const newMatches = [];
         const oldMatches = [];
 
-        matchList.name = res.data[0].attributes.name;
+        matchList.name = list.data[0].attributes.name;
         matchList.date = `${matchListTime[0]}-${matchListTime[1]}`;
 
         if(!matchList.relationships.matches.data[0])
