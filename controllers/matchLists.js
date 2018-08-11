@@ -214,7 +214,7 @@ function getMatchList(req, res, next) {
                       return matchStats;
                     });
                   newMatches.push(matchStats);
-                  console.log('newMatches: ', newMatches);
+                  // console.log('newMatches: ', newMatches);
                   // console.log('matchList', matchList);
 
 

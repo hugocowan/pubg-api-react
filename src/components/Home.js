@@ -7,7 +7,8 @@ class Home extends React.Component {
   state = {};
 
   storeName = ({ target: { value } }) => {
-    this.setState({ username: value });
+    const username = value.trim();
+    this.setState({ username });
   }
 
   redirect = (e) => {

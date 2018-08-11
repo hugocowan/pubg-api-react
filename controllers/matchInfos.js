@@ -74,6 +74,7 @@ process.on('message', (params) => {
       headers: {
         Accept: 'application/vnd.api+json'
       },
+      gzip: true,
       json: true
     })
       .then(matchInfo => filterMatchInfo(matchInfo, match))
