@@ -9,6 +9,8 @@ const MatchInfo = ({ match, getOrdinal, reload, getMap, mapMatch, map }) => {
   const players = Object.keys(match).filter(key => match[key].name);
   const playDate = new Date(attrs.createdAt);
 
+  console.log(match.info);
+
   return (
     <div key={match.id} className='matches'>
       <div>
@@ -57,7 +59,7 @@ const MatchInfo = ({ match, getOrdinal, reload, getMap, mapMatch, map }) => {
               <br />
               Kills – {match[players[index]].kills}.
               <br />
-              {match.info && !!match.info[players[index]].avgFPS &&
+              {match.info && match.info[players[index]] &&
                 <span>
                   Average FPS – {parseInt(match[players[index]].avgFPS)}
                   <br />

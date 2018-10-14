@@ -1,4 +1,4 @@
-/*global mpld3*/
+/*global mpld3, mpld3.draw_figure()*/
 import React from 'react';
 import axios from 'axios';
 import _ from 'lodash';
@@ -103,22 +103,22 @@ class Index extends React.Component{
     });
     return _.orderBy(filtered, field, dir).filter(match =>
       match.attributes.date === this.state.selectValue);
-  }
+  };
 
   getOrdinal = (number) => {
     const suffix = ['th','st','nd','rd'];
     const value = number % 100;
     return number + (suffix[(value - 20) % 10] || suffix[value] || suffix[0]);
-  }
+  };
 
   handleChange = () => {
     this.setState({ gameModeFPP: !this.state.gameModeFPP });
-  }
+  };
 
   handleReload = (username) => {
     this.props.history.push(`/matches/${username}`);
     window.location.reload();
-  }
+  };
 
   handleSeasonChange = ({ target: { value, date } }) => {
 
@@ -158,7 +158,7 @@ class Index extends React.Component{
         season.date === this.state.selectValue)[0];
       this.setState({ selectSeason });
     });
-  }
+  };
 
   getValue = (retrievedDates) => {
     const value = retrievedDates.sort((a,b) => new Date(b.date) - new Date(a.date))[0];
@@ -169,7 +169,7 @@ class Index extends React.Component{
         this.setState({ selectSeason });
       });
     }
-  }
+  };
 
   getMap = (match) => {
     this.setState({ mapMatch: match }, () => {
@@ -187,7 +187,7 @@ class Index extends React.Component{
 
     });
 
-  }
+  };
 
   showMap = (match) => {
     window.addEventListener('resize', this.showMap);
@@ -218,7 +218,7 @@ class Index extends React.Component{
         mpld3.draw_figure('map', mapData);
       }
     });
-  }
+  };
 
   hideMap = () => {
     window.removeEventListener('resize', this.showMap);
@@ -227,7 +227,7 @@ class Index extends React.Component{
       mapDiv.removeChild(mapDiv.firstChild);
     }
     this.setState({ map: false, mapMatch: '' });
-  }
+  };
 
   render(){
 

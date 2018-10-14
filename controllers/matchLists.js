@@ -64,6 +64,7 @@ function getMatchList(req, res, next) {
         })
         .then(matchData => {
           if(oldMatchList) oldMatchList.remove();
+          console.log('New MatchList created.');
           res.json(matchData);
         })
         .catch(next);
@@ -74,6 +75,7 @@ function getMatchList(req, res, next) {
 
     new Promise((resolve, reject) => {
       if(!oldMatchList) reject('Too many requests.');
+      console.log('Old matchList shown.');
       resolve(res.json(oldMatchList));
     })
       .catch(next => console.log(next.message || next));
@@ -100,24 +102,24 @@ function getMatchList(req, res, next) {
         matchList.name = list.data[0].attributes.name;
         matchList.date = `${matchListTime[0]}-${matchListTime[1]}`;
 
-        if(!matchList.relationships.matches.data[0])
-          return res.json({
-            message: 'No matches available! Play a match and then come back. It can take a while for PUBG to record it!',
-            id: matchList.id
-          });
+        if(!matchList.relationships.matches.data[0]) {
+            return res.json({
+                message: 'No matches available! Play a match and then come back. It can take a while for PUBG to record it!',
+                id: matchList.id
+            });
+        }
 
         matches.forEach(match => {
           Match
-            .find({id: match.id})
+            .findOne({ 'attributes.id': match.id })
             .then(matchData => {
-              if(matchData[0]) {
-                oldMatches.push(matchData[0]);
+              // console.log('matchData from DB: ', matchData, match.id);
+              if(matchData) {
+                oldMatches.push(matchData);
               } else return match;
             })
             .then((match) => {
-              if(!match) {
-                return createMatchList(matchList, matches, newMatches, oldMatches);
-              } else if(!match) return null;
+              if(!match) return createMatchList(matchList, matches, newMatches, oldMatches);
 
               rp({
                 method: 'GET',
